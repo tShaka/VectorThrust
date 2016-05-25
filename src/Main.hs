@@ -2,10 +2,12 @@ import Control.Monad
 import Data.IORef
 import Data.Time.Clock
 import FRP.Yampa
- 
+
+
 twoSecondsPassed :: SF () Bool
 twoSecondsPassed = time >>> arr (> 2)
  
+
 main :: IO ()
 main = do
   t <- getCurrentTime
