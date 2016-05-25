@@ -1,3 +1,5 @@
+module Graphics (graphicsMain) where
+
 import Graphics.UI.GLUT
 import Model
 
@@ -22,8 +24,8 @@ enemy = createCircle 0.1
 
 
 -- OpenGL main loop
-main :: IO ()
-main = do
+graphicsMain :: IO ()
+graphicsMain = do
 	(_progName, _args) <- getArgsAndInitialize
 	_window <- createWindow "OpenGL Test"
 	displayCallback $= display
