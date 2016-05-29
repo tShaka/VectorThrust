@@ -25,13 +25,13 @@ getBinDir :: IO FilePath
 getBinDir = getPrefixDirRel bindirrel
 
 getLibDir :: IO FilePath
-getLibDir = getPrefixDirRel "x86_64-windows-ghc-7.10.2\\VectorThrust-0.1.0.0-2Zz1uQjnKFl1k2yR8352Hq"
+getLibDir = getPrefixDirRel "x86_64-windows-ghc-7.10.2\\VectorThrust-0.1.0.0-EV0xGgVqq7TGQSSEKiFW2L"
 
 getDataDir :: IO FilePath
 getDataDir =  catchIO (getEnv "VectorThrust_datadir") (\_ -> getPrefixDirRel "x86_64-windows-ghc-7.10.2\\VectorThrust-0.1.0.0")
 
 getLibexecDir :: IO FilePath
-getLibexecDir = getPrefixDirRel "VectorThrust-0.1.0.0-2Zz1uQjnKFl1k2yR8352Hq"
+getLibexecDir = getPrefixDirRel "VectorThrust-0.1.0.0-EV0xGgVqq7TGQSSEKiFW2L"
 
 getSysconfDir :: IO FilePath
 getSysconfDir = getPrefixDirRel "etc"
