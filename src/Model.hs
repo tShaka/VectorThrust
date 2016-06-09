@@ -5,6 +5,7 @@ module Model
 , Object(..)
 , ObjectType(..)
 , Level(..)
+, Rotation(..)
 ) where
 
 -- TODO:
@@ -23,3 +24,5 @@ data ObjectType = Player | Enemy
 -- data Object = Player MassPoint | Enemy MassPoint
 
 data Level = Level [Object]
+
+data Rotation = Rotation Int
