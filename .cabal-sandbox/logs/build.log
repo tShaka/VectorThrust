@@ -1,11 +1,31 @@
 
-package: Yampa-0.10.4
+package: Yampa-0.10.5
 os: windows
 arch: x86_64
 compiler: ghc-7.10.2
 client: cabal-install-1.22.6.0
 flags: test-regression -test-hlint -test-doc-coverage
 dependencies: random-1.1 deepseq-1.4.1.1 base-4.8.1.0
+install-outcome: InstallOk
+docs-outcome: NotTried
+tests-outcome: NotTried
+
+package: VectorThrust-0.1.0.0
+os: windows
+arch: x86_64
+compiler: ghc-7.10.2
+client: cabal-install-1.22.6.0
+dependencies: time-1.5.0.1 base-4.8.1.0 Yampa-0.10.5 GLUT-2.7.0.1
+install-outcome: InstallOk
+docs-outcome: NotTried
+tests-outcome: NotTried
+
+package: VectorThrust-0.1.0.0
+os: windows
+arch: x86_64
+compiler: ghc-7.10.2
+client: cabal-install-1.22.6.0
+dependencies: time-1.5.0.1 base-4.8.1.0 Yampa-0.10.5 GLUT-2.7.0.1
 install-outcome: InstallOk
 docs-outcome: NotTried
 tests-outcome: NotTried

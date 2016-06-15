@@ -15,6 +15,12 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
+Library
+  Build-Depends: base, Yampa
+  hs-source-dirs:      src
+  exposed-modules:
+    Model
+
 executable VectorThrust
   main-is:             Main.hs
   -- other-modules:       
