@@ -59,6 +59,21 @@ accelerate' LEFT pos vel = accelerate'' pos vel ((-10.0),(0.0))
 accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 -}
 
+-- TODO Rotation
+-- Variablen: Accel-Value acc, Rationswinkel rot (0 ist in diesem Beispiel oben)
+-- Formel y: acc * cos(rot*pi() / 180)
+-- Formel x: acc * sin(rot*pi() / 180)
+-- Roation sollte bei Druck auf KeyLeft / KeyRight einfach den Rotationswert modifizieren
+
+-- TODO : Collision
+--proc acc -> do
+--     rec
+--     (xs,vs) <- ship      -< (acc, dvs)
+--     (xa,va) <- asteroid  -< (acc, dva)
+--     let (dxs, dvs, dxa, dva) coll (xs, vs, xa, va)
+--      (x's, v's, x'a, v'a) <- sum? -< (dxs, dvs, dxa, dva)
+--      returnA -< (x's, x'a)
+
 
 --
 
