@@ -16,13 +16,13 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 Library
-  Build-Depends: base, Yampa
+  Build-Depends: base, Yampa, GLUT
   hs-source-dirs:      src
   exposed-modules:
     Model
 
 executable VectorThrust
-  main-is:             Main.hs
+  main-is:             Game2.hs
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9, Yampa, time, GLUT
