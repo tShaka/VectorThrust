@@ -101,7 +101,7 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 	 (posS,velS) <- accelerate posS velS -< accShip
 	 (posA,velA) <- accelerate posA velA -< Vector (-0.01) (-0.01)
 	 let (dps, dvs, dpa, dva) = collision (posS, velS, posA, velA)
-	 (ps', vs', pa', va') <- accumHoldBy (+) -< (dps, dvs, dpa, dva)
+	 (ps', vs', pa', va') <- accumHoldBy (^+^) zeroVector -< (dps, dvs, dpa, dva)
 	returnA -< [GameObject ps' vs' accS Player, GameObject pa' va' accA Enemy]
 
 
