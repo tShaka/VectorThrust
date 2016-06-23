@@ -12,27 +12,20 @@
 {-# LANGUAGE Arrows #-}
 
 import Model
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Position)
 import Data.IORef
 import FRP.Yampa
 import FRP.Yampa.Utilities
 import Control.Arrow
 import Data.Time.Clock
+import Data.Maybe
 
-
-type Pos = (Float,Float)
-type Vel = (Float,Float)
-data Action = UP | DOWN | LEFT | RIGHT | SHOOT | NONE
-data Type = PLAYER | ENEMY
-data GameObject = GameObject Pos Vel Type
-type GameState = [GameObject]
-type Acc =(Float,Float)
 
 createPlayer :: GameObject
-createPlayer = GameObject (0.0,0.0) (0,0) PLAYER
+createPlayer = GameObject zeroVector zeroVector zeroVector Player
 	
-createEnemy :: Pos -> GameObject
-createEnemy pos = GameObject pos (0,0) ENEMY
+createEnemy :: Position -> GameObject
+createEnemy pos = GameObject pos zeroVector zeroVector Enemy
 	
 
 --refresh :: IORef Action -> GameState -> SF () (GameState)
@@ -70,27 +63,53 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 --     rec
 --     (xs,vs) <- ship      -< (acc, dvs)
 --     (xa,va) <- asteroid  -< (acc, dva)
---     let (dxs, dvs, dxa, dva) coll (xs, vs, xa, va)
+--     let (dxs, dvs, dxa, dva) = coll (xs, vs, xa, va)
 --      (x's, v's, x'a, v'a) <- sum? -< (dxs, dvs, dxa, dva)
 --      returnA -< (x's, x'a)
 
 
---
 
-gameSF :: GameState -> SF Acc GameState
-gameSF [(GameObject posS velS PLAYER),(GameObject posA velA ENEMY)] = proc (aX,aY) -> do
-	((xS,yS),(vSx,vSy)) <- accelerate posS velS -< (aX,aY)
-	((xA,yA),(vAx,vAy)) <- accelerate posA velA -< ((-0.01),(-0.01))
-	returnA -< [GameObject (xS,yS) (vSx,vSy) PLAYER, GameObject (xA,yA) (vAx,vAy) ENEMY]
+collision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
+collision (ps,vs,pa,va) = 
+	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (zeroVector,zeroVector,zeroVector,zeroVector)
+
+	
+afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
+afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
+	where
+		dpos1 = (-1) *^ ps
+		dv1 = (-1) *^ vs
+		dpos2 = (-1) *^ pa
+		dv2 = (-1) *^ va
+	
+	
+isColliding :: (Position,Position) -> Bool
+isColliding (posS,posA) = 
+	((distance dpos) - (rs + ra)) < sigma
+	where
+		rs = 0.15 :: GLfloat
+		ra = 0.10 :: GLfloat
+		dpos = posS ^-^ posA
+		sigma = 0.001
+		
+distance :: Vector -> GLfloat
+distance (Vector x y) = sqrt(x*x + y*y)
+		
+gameSF :: GameState -> SF Acceleration GameState
+gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
+	rec
+	 (posS,velS) <- accelerate posS velS -< accShip
+	 (posA,velA) <- accelerate posA velA -< Vector (-0.01) (-0.01)
+	 let (dps, dvs, dpa, dva) = collision (posS, velS, posA, velA)
+	 (ps', vs', pa', va') <- accumHoldBy (+) -< (dps, dvs, dpa, dva)
+	returnA -< [GameObject ps' vs' accS Player, GameObject pa' va' accA Enemy]
 
 
-accelerate :: Pos -> Vel -> SF Acc (Pos,Vel)
-accelerate (x0,y0) (v0x,v0y) = proc (aX,aY) -> do
-	vX <- (v0x+) ^<< integral -< (aX)
-	vY <- (v0y+) ^<< integral -< (aY)
-	x <- (x0+) ^<< integral -< (vX)
-	y <- (y0+) ^<< integral -< (vY)
-	returnA -<((x,y),(vX,vY))
+accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
+accelerate pos0 v0 = proc acc -> do
+	v <- (v0^+^) ^<< integral -< acc
+	pos <- (pos0^+^) ^<< integral -< v
+	returnA -<(pos,v)
 	
 	
 -- set up OpenGL and start program
@@ -110,7 +129,7 @@ createAWindow title = do
 	t <- getCurrentTime
 	timeRef <- newIORef t
 	-- saves input
-	actionRef <- newIORef NONE
+	actionRef <- newIORef AccNone
 	-- set up ReactHandle
 	rh <- reactInit (initr) (actuate) (gameSF initGameState)
 	-- set up Callbacks
@@ -124,18 +143,18 @@ createAWindow title = do
 	
 -- creates initial GameState
 initGameState :: GameState
-initGameState = [createPlayer, createEnemy (0.7,0.9)]
+initGameState = [createPlayer, createEnemy (Vector 0.7 0.9)]
 	
 
 ----------------- reactimate functions	 ------------------
 -- typed: ReactHandle Input Output -> ReactHandle () (Float,Float)
 
 -- init react
-initr :: IO Acc
-initr = return (0,0)
+initr :: IO Acceleration
+initr = return zeroVector
 
 --actuate react
-actuate :: ReactHandle Acc GameState -> Bool -> GameState -> IO Bool
+actuate :: ReactHandle Acceleration GameState -> Bool -> GameState -> IO Bool
 actuate _ _ gameState = do 
 	renderScene gameState
 	return False
@@ -147,7 +166,7 @@ display :: IO ()
 display = do
 	return ()
 	
-idle :: IORef UTCTime -> IORef Action -> ReactHandle Acc GameState -> IO ()
+idle :: IORef UTCTime -> IORef Action -> ReactHandle Acceleration GameState -> IO ()
 idle timeRef inputRef rh = do
 	now <- getCurrentTime
 	lastTime <- readIORef timeRef
@@ -158,27 +177,27 @@ idle timeRef inputRef rh = do
 	return ()
 	
 -- helper for converting input to acceleration
-convAcc :: Action -> Acc
-convAcc UP = (0,1)
-convAcc DOWN = (0,(-1))
-convAcc LEFT = ((-1),0)
-convAcc RIGHT = (1,0)
-convAcc NONE = (0,0)
+convAcc :: Action -> Acceleration
+convAcc AccUp = Vector 0 1
+convAcc AccDown = Vector 0 (-1)
+convAcc AccLeft = Vector (-1) 0
+convAcc AccRight = Vector 1 0
+convAcc AccNone = Vector 0 0
 	
 resizeWindow :: Size -> IO ()
 resizeWindow size = do
 	-- TODO keep aspect ratio
-	viewport $= (Graphics.UI.GLUT.Position 0 0, size)
+	-- viewport $= (Graphics.UI.GLUT.Position 0 0, size)
 	return ()
 	
 keyboardMouse :: IORef Action -> KeyboardMouseCallback
 keyboardMouse inputRef key Down _ _ = case key of
-	(SpecialKey KeyLeft) -> inputRef $~! \_ -> LEFT
-	(SpecialKey KeyRight) -> inputRef $~! \_ -> RIGHT
-	(SpecialKey KeyUp) -> inputRef $~! \_ -> UP
-	(SpecialKey KeyDown) -> inputRef $~! \_ -> DOWN
+	(SpecialKey KeyLeft) -> inputRef $~! \_ -> AccLeft
+	(SpecialKey KeyRight) -> inputRef $~! \_ -> AccRight
+	(SpecialKey KeyUp) -> inputRef $~! \_ -> AccUp
+	(SpecialKey KeyDown) -> inputRef $~! \_ -> AccDown
 	_ -> return ()
-keyboardMouse inputRef key Up _ _ = inputRef $~! \_ -> NONE
+keyboardMouse inputRef key Up _ _ = inputRef $~! \_ -> AccNone
 keyboardMouse _ _ _ _ _ = return ()
 	
 	
@@ -208,11 +227,10 @@ bouncingBall y0 = bbAux y0 0.0
 		
 ------------------ graphics ------------------------------------
 
-type GLPos = (GLfloat, GLfloat)
-type Sprite = [GLPos]
+type Sprite = [Position] -- TODO rotation
 
 renderScene :: GameState -> IO ()
-renderScene [GameObject posS _ PLAYER, GameObject posA _ ENEMY] = do
+renderScene [GameObject posS _ _ Player, GameObject posA _ _ Enemy] = do
 	clear [ColorBuffer]
 	loadIdentity
 	--mapM_ renderGameObject gs
@@ -234,28 +252,28 @@ renderTest pos = do
 -}	
 	
 renderGameObject :: GameObject -> IO ()
-renderGameObject (GameObject pos _ PLAYER) = renderPlayer pos
-renderGameObject (GameObject pos _ ENEMY) = renderEnemy pos
+renderGameObject (GameObject pos _ _ Player) = renderPlayer pos
+renderGameObject (GameObject pos _ _ Enemy) = renderEnemy pos
 
-renderPlayer :: Pos -> IO ()
+renderPlayer :: Position -> IO ()
 renderPlayer pos = do
-	renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (0::GLfloat) (0::GLfloat)) >> (mapM_ (\(x,y) -> vertex $ Vertex2 x y) (translateTo playerPointSet (convertPos pos)))
+	renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (0::GLfloat) (0::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo playerPointSet pos))
 	
-renderEnemy :: Pos -> IO ()
+renderEnemy :: Position -> IO ()
 renderEnemy pos = do
-	renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (1::GLfloat) (0::GLfloat)) >> (mapM_ (\(x,y) -> vertex $ Vertex2 x y) (translateTo enemyPointSet (convertPos pos)))
+	renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (1::GLfloat) (0::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo enemyPointSet pos))
 	
 playerPointSet :: Sprite
-playerPointSet = let r=0.15 in map (\t -> (r*cos(t), r*sin(t))) [0,0.2..(2*pi)]
+playerPointSet = let r=0.15 in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
 
 enemyPointSet :: Sprite
-enemyPointSet = let r=0.1 in map (\t -> (r*cos(t), r*sin(t))) [0,0.2..(2*pi)]
+enemyPointSet = let r=0.1 in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
 
-translateTo :: Sprite -> GLPos -> Sprite
-translateTo s (x',y') = map (\(x,y) -> (x+x',y+y')) s
+translateTo :: Sprite -> Position -> Sprite
+translateTo s pos = map (\pos' -> pos ^+^ pos') s
 
-convertPos :: Pos -> GLPos
-convertPos (x,y) = (realToFrac x, realToFrac y)
+--convertPos :: Position -> GLPos
+--convertPos (x,y) = (realToFrac x, realToFrac y)
 
 
 {-
