@@ -1,30 +1,31 @@
 module Model
 ( Velocity(..)
 , Position(..)
-, GObjectMass(..)
-, GObject(..)
-, GObjectType(..)
+, GameObjectMass(..)
+, GameObject(..)
+, GameObjectType(..)
 , Level(..)
 , Rotation(..)
 ) where
 
 import Graphics.UI.GLUT
--- TODO:
--- make Velocity and Position instances of Vectorspace
+import Yampa.Vec
 
-data Velocity = Velocity GLfloat GLfloat
 
-data Position = Position GLfloat GLfloat
+data Vector = Vector GLfloat GLfloat
+instance VectorSpacepace 
+type Velocity = Vector
+type Position = Vector
 
 -- maybe incorporate radius
-data GObjectMass = GObjectMass Position Velocity
+data GameObjectMass = GameObjectMass Position Velocity
 
-data GObject = GObject GObjectMass GObjectType
-data GObjectType = Player | Enemy
--- alternatively instead of defining GObjectType?
--- data GObject = Player GObjectMass | Enemy GObjectMass
+data GameObject = GameObject GameObjectMass GameObjectType
+data GameObjectType = Player | Enemy
+-- alternatively instead of defining GameObjectType?
+-- data GameObject = Player GameObjectMass | Enemy GameObjectMass
 
-data Level = Level [GObject]
+data Level = Level [GameObject]
 
 data Rotation = Rotation GLfloat
 
