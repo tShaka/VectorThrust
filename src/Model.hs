@@ -1,28 +1,30 @@
 module Model
 ( Velocity(..)
 , Position(..)
-, MassPoint(..)
-, Object(..)
-, ObjectType(..)
+, GObjectMass(..)
+, GObject(..)
+, GObjectType(..)
 , Level(..)
 , Rotation(..)
 ) where
 
+import Graphics.UI.GLUT
 -- TODO:
 -- make Velocity and Position instances of Vectorspace
 
-data Velocity = Velocity Double Double
+data Velocity = Velocity GLfloat GLfloat
 
-data Position = Position Float Float
+data Position = Position GLfloat GLfloat
 
 -- maybe incorporate radius
-data MassPoint = MassPoint Position Velocity
+data GObjectMass = GObjectMass Position Velocity
 
-data Object = Object MassPoint ObjectType
-data ObjectType = Player | Enemy
--- alternatively instead of defining ObjectType?
--- data Object = Player MassPoint | Enemy MassPoint
+data GObject = GObject GObjectMass GObjectType
+data GObjectType = Player | Enemy
+-- alternatively instead of defining GObjectType?
+-- data GObject = Player GObjectMass | Enemy GObjectMass
 
-data Level = Level [Object]
+data Level = Level [GObject]
 
-data Rotation = Rotation Int
+data Rotation = Rotation GLfloat
+
