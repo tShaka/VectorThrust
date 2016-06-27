@@ -68,12 +68,13 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 --      returnA -< (x's, x'a)
 
 
-
+-- Ruft die Kollisionsfunktionen auf, die wir nachher auslagern werden
 collision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 collision (ps,vs,pa,va) = 
 	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (ps,vs,pa,va)
 
-	
+--Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
+--Mehr später.
 afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 	where
@@ -82,10 +83,11 @@ afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 		dpos2 = (-1) *^ pa
 		dv2 = (-1) *^ va
 	
-	
+--Überprüft die Kollision von zwei Objekten. Aktuell haben wir nur 2.
+-- TODO: Andere Objekte als Kreise
 isColliding :: (Position,Position) -> Bool
 isColliding (posS,posA) = 
-	((distance dpos) - (rs + ra)) < sigma
+	((norm dpos) - (rs + ra)) < sigma
 	where
 		rs = 0.15 :: GLfloat
 		ra = 0.10 :: GLfloat
@@ -105,6 +107,8 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 	returnA -< [GameObject ps' vs' accS Player, GameObject pa' va' accA Enemy]
 
 
+-- Nimmt eine Position und Geschwindigkeit, addiert die Position zur
+-- Geschwindigkeit, und gibt beides wieder aus.
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
 accelerate pos0 v0 = proc acc -> do
 	v <- (v0^+^) ^<< integral -< acc
