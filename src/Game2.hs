@@ -77,10 +77,10 @@ collision (ps,vs,pa,va) =
 afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 	where
-		dpos1 = (-1) *^ ps
-		dv1 = (-1) *^ vs
-		dpos2 = (-1) *^ pa
-		dv2 = (-1) *^ va
+		dpos1 = Vector (-0.01) (-0.01) --(Vector (-0.01) (-0.01)) ^+^ ps
+		dv1 = (-2) *^ vs
+		dpos2 = Vector (-0.01) (-0.01) --(Vector (-0.01) (-0.01)) ^+^ pa
+		dv2 = (-2) *^ va
 	
 	
 isColliding :: (Position,Position) -> Bool
@@ -90,19 +90,38 @@ isColliding (posS,posA) =
 		rs = 0.15 :: GLfloat
 		ra = 0.10 :: GLfloat
 		dpos = posS ^-^ posA
-		sigma = 0.001
+		sigma = 0.1
 		
 distance :: Vector -> GLfloat
 distance (Vector x y) = sqrt(x*x + y*y)
 		
+		{-}
 gameSF :: GameState -> SF Acceleration GameState
 gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
 	rec
 	 (posS,velS) <- accelerate posS velS -< accShip
 	 (posA,velA) <- accelerate posA velA -< Vector (-0.01) (-0.01)
 	 let (dps, dvs, dpa, dva) = collision (posS, velS, posA, velA)
-	 (ps', vs', pa', va') <- accumHoldBy (^+^) zeroVector -< Event (dps, dvs, dpa, dva)
-	returnA -< [GameObject ps' vs' accS Player, GameObject pa' va' accA Enemy]
+	 --(ps', vs', pa', va') <- accumHoldBy (^+^) zeroVector -< Event (dps, dvs, dpa, dva) -- ersetzt mit den 4 unteren zeilen
+	 ps' <- accumHoldBy (^+^) zeroVector -< Event dps
+	 vs' <- accumHoldBy (^+^) zeroVector -< Event dvs
+	 pa' <- accumHoldBy (^+^) zeroVector -< Event dpa
+	 va' <- accumHoldBy (^+^) zeroVector -< Event dva
+	--returnA -< [GameObject ps' vs' accS Player, GameObject pa' va' accA Enemy] -- ersetzt mit unterer zeile
+	returnA -< [GameObject (ps' ^+^ posS) (vs' ^+^ velS) accS Player, GameObject (pa' ^+^ posA) (va' ^+^ velA) accA Enemy]
+-}
+	
+gameSF :: GameState -> SF Acceleration GameState
+gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
+	vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, Event das)
+	ps <- (posS ^+^) ^<< impulseIntegral -< (vs, NoEvent)
+	va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), Event daa)
+	pa <- (posA ^+^) ^<< impulseIntegral -< (va, NoEvent)
+	returnA -< [GameObject ps vs accS Player, GameObject pa va accA Enemy]
+		where
+			(dps, das, dpa, daa) = collision (posS,velS,posA,velA)
+
+
 
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
 accelerate pos0 v0 = proc acc -> do
