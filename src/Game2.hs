@@ -69,28 +69,28 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 
 
 
-collision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
+collision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
 collision (ps,vs,pa,va) = 
-	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (zeroVector,zeroVector,zeroVector,zeroVector)
+	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (NoEvent,NoEvent,NoEvent,NoEvent)
 
 	
-afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
+afterCollision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
 afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 	where
-		dpos1 = Vector (-0.01) (-0.01) --(Vector (-0.01) (-0.01)) ^+^ ps
-		dv1 = (-2) *^ vs
-		dpos2 = Vector (-0.01) (-0.01) --(Vector (-0.01) (-0.01)) ^+^ pa
-		dv2 = (-2) *^ va
+		dpos1 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ ps
+		dv1 = Event $(-2) *^ vs
+		dpos2 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ pa
+		dv2 = Event $ (-10) *^ va
 	
 	
 isColliding :: (Position,Position) -> Bool
-isColliding (posS,posA) = 
-	((distance dpos) - (rs + ra)) < sigma
+isColliding (posS,posA) = ((distance dpos) - (rs + ra)) < sigma
 	where
 		rs = 0.15 :: GLfloat
 		ra = 0.10 :: GLfloat
 		dpos = posS ^-^ posA
 		sigma = 0.1
+		
 		
 distance :: Vector -> GLfloat
 distance (Vector x y) = sqrt(x*x + y*y)
@@ -113,14 +113,14 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 	
 gameSF :: GameState -> SF Acceleration GameState
 gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
-	vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, Event das)
+	rec
+	vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, das)
 	ps <- (posS ^+^) ^<< impulseIntegral -< (vs, NoEvent)
-	va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), Event daa)
+	va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), daa)
 	pa <- (posA ^+^) ^<< impulseIntegral -< (va, NoEvent)
 	returnA -< [GameObject ps vs accS Player, GameObject pa va accA Enemy]
 		where
 			(dps, das, dpa, daa) = collision (posS,velS,posA,velA)
-
 
 
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
