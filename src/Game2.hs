@@ -68,12 +68,13 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 --      returnA -< (x's, x'a)
 
 
-
+-- Ruft die Kollisionsfunktionen auf, die wir nachher auslagern werden
 collision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 collision (ps,vs,pa,va) = 
 	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (zeroVector,zeroVector,zeroVector,zeroVector)
 
-	
+--Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
+--Wird später basierend auf Objektmasse und Impulsübertragung funktionieren.
 afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 	where
@@ -82,7 +83,9 @@ afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 		dpos2 = Vector (-0.01) (-0.01) --(Vector (-0.01) (-0.01)) ^+^ pa
 		dv2 = (-2) *^ va
 	
-	
+--Überprüft die Kollision von zwei Objekten. Aktuell haben wir nur 2.
+-- TODO: Andere Objekte als Kreise
+-- TODO: distance durch norm ersetzen	
 isColliding :: (Position,Position) -> Bool
 isColliding (posS,posA) = 
 	((distance dpos) - (rs + ra)) < sigma
