@@ -11,6 +11,8 @@ module Model
 , GameObjectType(..)
 , GameState(..)
 , Rotation(..)
+, GameObjectTurnVel(..)
+, GameObjectMass(..)
 ) where
 
 import Graphics.UI.GLUT hiding (Position, Level)
@@ -40,6 +42,8 @@ data GameObjectType = Player | Enemy | Asteroid
 -- GameState == Level in this case
 type GameState = [GameObject]
 
-data Rotation = Rotation GLfloat
+type Rotation = GLfloat
+type GameObjectTurnVel = GLfloat
+type GameObjectMass = GLfloat
 
 data Action = AccLeft | AccRight | AccUp | AccDown | AccNone
