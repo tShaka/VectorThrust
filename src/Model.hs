@@ -20,6 +20,7 @@ import FRP.Yampa.VectorSpace
 
 
 data Vector = Vector GLfloat GLfloat
+	deriving Show
 instance VectorSpace Vector GLfloat where
 	zeroVector = Vector 0 0
 	a *^ Vector x y = Vector (x*a) (y*a)

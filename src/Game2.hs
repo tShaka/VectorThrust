@@ -71,8 +71,33 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 collision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
 -- Ruft die Kollisionsfunktionen auf, die wir nachher auslagern werden
 collision (ps,vs,pa,va) = 
-	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (NoEvent,NoEvent,NoEvent,NoEvent)
+	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else if collidesWithWall (ps,pa) then afterWallCollision (ps,vs,pa,va) else (NoEvent, NoEvent, NoEvent, NoEvent) --(NoEvent,NoEvent,NoEvent,NoEvent)
 
+collidesWithWall :: (Position, Position) -> Bool
+collidesWithWall (Vector x y, Vector x' y')
+	| x < (-1) = True
+	| y < (-1) = True
+	| x > 1 = True
+	| y > 1 = True
+	| x' < (-1) = True
+	| y' < (-1) = True
+	| x' > 1 = True
+	| y' > 1 = True
+	| otherwise = False
+	
+collidesWithWall' :: SF (Position,Velocity) (Event Velocity)
+collidesWithWall' = proc (Vector x y, vel) -> do
+	hit <- edge -< x < (-1) || x > 1 || y < (-1) || y > 1
+	returnA -< hit `tag` ((-1) *^ vel)
+	
+	
+afterWallCollision :: (Position, Velocity, Position, Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
+afterWallCollision (ps,vs,pa,va) = (dpos1, dv1, dpos2, dv2)
+	where
+		dpos1 = Event $ Vector (-0.01) (-0.01)
+		dv1 = Event $(-1) *^ vs
+		dpos2 = Event $ Vector (-0.01) (-0.01)
+		dv2 = Event $ (-10) *^ va
 	
 afterCollision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
 --Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
@@ -118,10 +143,12 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 gameSF :: GameState -> SF Acceleration GameState
 gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
 	rec
-	vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, das)
-	ps <- (posS ^+^) ^<< impulseIntegral -< (vs, NoEvent)
-	va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), daa)
-	pa <- (posA ^+^) ^<< impulseIntegral -< (va, NoEvent)
+		dvs <- collidesWithWall' -< (posS,accShip)
+		vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, dvs)
+		--vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, das)
+		ps <- (posS ^+^) ^<< integral -< vs
+		va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), daa)
+		pa <- (posA ^+^) ^<< integral -< va
 	returnA -< [GameObject ps vs accS Player, GameObject pa va accA Enemy]
 		where
 			(dps, das, dpa, daa) = collision (posS,velS,posA,velA)
@@ -252,12 +279,13 @@ bouncingBall y0 = bbAux y0 0.0
 type Sprite = [Position] -- TODO rotation
 
 renderScene :: GameState -> IO ()
-renderScene [GameObject posS _ _ Player, GameObject posA _ _ Enemy] = do
+renderScene [GameObject posS vs accS Player, GameObject posA _ _ Enemy] = do
 	clear [ColorBuffer]
 	loadIdentity
 	--mapM_ renderGameObject gs
 	renderPlayer posS
 	renderEnemy posA
+	print posS
 	flush
 
 {-
