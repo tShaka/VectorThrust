@@ -118,7 +118,7 @@ isColliding (posS,posA) = ((distance dpos) - (rs + ra)) < sigma
 		rs = 0.15 :: GLfloat
 		ra = 0.10 :: GLfloat
 		dpos = posS ^-^ posA
-		sigma = 0.1
+		sigma = 0
 		
 		
 distance :: Vector -> GLfloat
@@ -143,6 +143,20 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 gameSF :: GameState -> SF Acceleration GameState
 gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
 	rec
+		-- movement + collision player
+		velPreS <- iPre velS -< vS
+		colS <- collisionSF -< (posS', velPreS, posA', velPreA)
+		vS <- (velS ^+^) ^<< impulseIntegral -< (accShip, colS)
+		posS' <- (posS ^+^) ^<< integral -< vS
+		-- movement + collision enemy
+		velPreA <- iPre velA -< vA
+		colA <- collisionSF -< (posA', velPreA, posS', velPreS)
+		vA <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), colA)
+		posA' <- (posA ^+^) ^<< integral -< vA
+		-- return new GameState
+	returnA -< [GameObject posS' vS accS Player, GameObject posA'  vA accA Enemy]
+	{-
+	rec
 		dvs <- collidesWithWall' -< (posS,accShip)
 		vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, dvs)
 		--vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, das)
@@ -152,8 +166,26 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 	returnA -< [GameObject ps vs accS Player, GameObject pa va accA Enemy]
 		where
 			(dps, das, dpa, daa) = collision (posS,velS,posA,velA)
+-}
 
+collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
+collisionSF = proc (p1,v1,p2,v2) -> do
+	hit <- edge -< isColliding (p1,p2) || detectWall p1
+	returnA -< (hit `tag` ((-2) *^ v1))
 
+wallCollisionSF :: SF (Position,Velocity) (Event Velocity)
+wallCollisionSF = proc (p, v) -> do
+	hit <- edge -< detectWall p
+	returnA -< (hit `tag` ((-2) *^ v))
+
+detectWall :: Position -> Bool
+detectWall (Vector x y)
+	| x < (-1) = True
+	| x > 1 = True
+	| y < (-1) = True
+	| y > 1 = True
+	| otherwise = False
+	
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
 accelerate pos0 v0 = proc acc -> do
 	v <- (v0^+^) ^<< integral -< acc
@@ -285,7 +317,7 @@ renderScene [GameObject posS vs accS Player, GameObject posA _ _ Enemy] = do
 	--mapM_ renderGameObject gs
 	renderPlayer posS
 	renderEnemy posA
-	print posS
+	print (posS ^-^ posA)
 	flush
 
 {-
