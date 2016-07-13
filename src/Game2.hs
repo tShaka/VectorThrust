@@ -68,47 +68,22 @@ accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
 --      returnA -< (x's, x'a)
 
 
-collision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
 -- Ruft die Kollisionsfunktionen auf, die wir nachher auslagern werden
+collision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
 collision (ps,vs,pa,va) = 
-	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else if collidesWithWall (ps,pa) then afterWallCollision (ps,vs,pa,va) else (NoEvent, NoEvent, NoEvent, NoEvent) --(NoEvent,NoEvent,NoEvent,NoEvent)
+	if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else (zeroVector,zeroVector,zeroVector,zeroVector)
 
-collidesWithWall :: (Position, Position) -> Bool
-collidesWithWall (Vector x y, Vector x' y')
-	| x < (-1) = True
-	| y < (-1) = True
-	| x > 1 = True
-	| y > 1 = True
-	| x' < (-1) = True
-	| y' < (-1) = True
-	| x' > 1 = True
-	| y' > 1 = True
-	| otherwise = False
-	
-collidesWithWall' :: SF (Position,Velocity) (Event Velocity)
-collidesWithWall' = proc (Vector x y, vel) -> do
-	hit <- edge -< x < (-1) || x > 1 || y < (-1) || y > 1
-	returnA -< hit `tag` ((-1) *^ vel)
-	
-	
-afterWallCollision :: (Position, Velocity, Position, Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
-afterWallCollision (ps,vs,pa,va) = (dpos1, dv1, dpos2, dv2)
+--Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
+--Wird später basierend auf Objektmasse und Impulsübertragung funktionieren.
+afterCollision :: (Position,Velocity,Position,Velocity) -> (Position,Velocity,Position,Velocity)
+afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 	where
 		dpos1 = Event $ Vector (-0.01) (-0.01)
 		dv1 = Event $(-1) *^ vs
 		dpos2 = Event $ Vector (-0.01) (-0.01)
 		dv2 = Event $ (-10) *^ va
 	
-afterCollision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
---Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
---Wird später basierend auf Objektmasse und Impulsübertragung funktionieren.
-afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
-	where
-		dpos1 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ ps
-		dv1 = Event $(-2) *^ vs
-		dpos2 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ pa
-		dv2 = Event $ (-10) *^ va
-	
+
 --Überprüft die Kollision von zwei Objekten. Aktuell haben wir nur 2.
 -- TODO: Andere Objekte als Kreise
 -- TODO: distance durch norm ersetzen	
