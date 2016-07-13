@@ -180,6 +180,16 @@ collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
     hit <- edge -< isColliding (p1,p2) || detectWall p1
     returnA -< (hit `tag` ((-2) *^ v1))
+    
+
+afterColVel :: Velocity -> Velocity -> Velocity
+afterColVel v1 v2 = ((((-1) * elasS') *^ v1) ^+^ (((0.5 - elasS')) + (massA / massS) * 0.5) *^ v2)
+        where 
+         elasS' = elasS * (1 - 0) * 0.5
+         elasS = 0.5
+         massA = 1
+         massS = 1
+    
 {-
 VelS' = (ElasS' * VelS * (-1) + (0.5 - ElasS')) + (MassA `div` MassS) * VelA * 0.5
         where ElasS' = ElasS * (1 - IsProjectile(A)) * 0.5
