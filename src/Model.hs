@@ -15,7 +15,6 @@ module Model
 , GameObjectMass(..)
 , GameObjectElas(..)
 , GameObjectSize(..)
-, IsProjectile(..)
 ) where
 
 import Graphics.UI.GLUT hiding (Position, Level)
@@ -51,7 +50,5 @@ type GameObjectSpin = GLfloat
 type GameObjectMass = GLfloat
 type GameObjectSize = GLfloat
 type GameObjectElas = GLfloat
---New input, couldn't test @univ:
-type IsProjectile = Bool
 
 data Action = AccLeft | AccRight | AccUp | AccDown | AccNone
