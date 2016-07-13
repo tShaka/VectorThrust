@@ -113,7 +113,7 @@ afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
 -- TODO: Andere Objekte als Kreise
 -- TODO: distance durch norm ersetzen    
 isColliding :: (Position,Position) -> Bool
-isColliding (posS,posA) = ((distance dpos) - (rs + ra)) < sigma
+isColliding (posS,posA) = ((distance dpos) - (rs + ra)) <= sigma
     where
         rs = 0.15 :: GLfloat
         ra = 0.10 :: GLfloat
@@ -183,10 +183,11 @@ collisionSF = proc (p1,v1,p2,v2) -> do
     
 
 afterColVel :: Velocity -> Velocity -> Velocity
-afterColVel v1 v2 = ((((-1) * elasS') *^ v1) ^+^ (((0.5 - elasS')) + (massA / massS) * 0.5) *^ v2)
+--afterColVel v1 v2 = ( (0.5 - elasS') +^(((-1) * elasS') *^ v1) ^+^ ( + (massA / massS) * 0.5) *^ v2)
+afterColVel v1 v2 = ((((-1) * elasS') *^ v1) ^+^ ((massA / massS) * 0.5) *^ v2)
         where 
          elasS' = elasS * (1 - 0) * 0.5
-         elasS = 0.5
+         elasS = 1
          massA = 1
          massS = 1
 {-
