@@ -179,12 +179,15 @@ Die Größe wird bereits für die Kollisionserkennung verwendet
 collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
     hit <- edge -< isColliding (p1,p2) || detectWall p1
-    returnA -< (hit `tag` afterColVel v1 v2)
+    returnA -< (hit `tag` detection v1 v2 (detectWall p1))
     
+detection :: Velocity -> Velocity -> Bool -> Velocity
+detection v1 _ True = (-2) *^ v1
+detection v1 v2 False = 2 *^ afterColVel v1 v2
 
 afterColVel :: Velocity -> Velocity -> Velocity
 --afterColVel v1 v2 = ( (0.5 - elasS') +^(((-1) * elasS') *^ v1) ^+^ ( + (massA / massS) * 0.5) *^ v2)
-afterColVel v1 v2 = ((((-1) * elasS') *^ v1) ^+^ ((massA / massS) * 0.5) *^ v2)
+afterColVel v1 v2 = (((-1) * elasS') *^ v1) ^+^ (((massA / massS) * 0.5) *^ v2)
         where 
          elasS' = elasS * (1 - 0) * 0.5
          elasS = 1
