@@ -23,13 +23,13 @@ import FRP.Yampa.VectorSpace
 
 
 data Vector = Vector GLfloat GLfloat
-	deriving Show
+    deriving Show
 instance VectorSpace Vector GLfloat where
-	zeroVector = Vector 0 0
-	a *^ Vector x y = Vector (x*a) (y*a)
-	Vector x1 y1 ^+^ Vector x2 y2 = Vector (x1+x2) (y1+y2)
-	Vector x1 y1 ^-^ Vector x2 y2 = Vector (x1-x2) (y1-y2)
-	Vector x1 y1 `dot` Vector x2 y2 = x1*x2 + y1*y2
+    zeroVector = Vector 0 0
+    a *^ Vector x y = Vector (x*a) (y*a)
+    Vector x1 y1 ^+^ Vector x2 y2 = Vector (x1+x2) (y1+y2)
+    Vector x1 y1 ^-^ Vector x2 y2 = Vector (x1-x2) (y1-y2)
+    Vector x1 y1 `dot` Vector x2 y2 = x1*x2 + y1*y2
 
 type Velocity = Vector
 type Position = Vector
