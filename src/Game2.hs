@@ -12,7 +12,7 @@
 {-# LANGUAGE Arrows #-}
 
 import Model
-import Graphics.UI.GLUT hiding (Position)
+import Graphics.UI.GLUT hiding (position, Position)
 import Data.IORef
 import FRP.Yampa
 import FRP.Yampa.Utilities
@@ -71,25 +71,40 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
 --Neue Kollisionsfunktion
 --TODO: Geschwindigkeitsberechnung
 gameSF :: GameState -> SF Acceleration GameState
-gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
+--gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = proc accShip -> do
+gameSF [o1, o2] = proc accShip -> do
     rec
         -- movement + collision player
-        velPreS <- iPre velS -< vS
-        colS <- collisionSF -< (posS', velPreS, posA', velPreA)
-        vS <- (velS ^+^) ^<< impulseIntegral -< (accShip, colS)
-        posS' <- (posS ^+^) ^<< integral -< vS
+        velPreS <- iPre (vel o1) -< vS
+        colS <- collisionSF -< (posS', velPreS, posA', velPreA) -- keine SF mehr benötigt!!! nur noch collision die ein Event zurückgibt
+        --let colS = collision o1 o2
+        vS <- (vel o1 ^+^) ^<< impulseIntegral -< (accShip, colS)
+        posS' <- (pos o1 ^+^) ^<< integral -< vS
         -- movement + collision enemy
-        velPreA <- iPre velA -< vA
+        velPreA <- iPre (vel o2) -< vA
         colA <- collisionSF -< (posA', velPreA, posS', velPreS)
-        vA <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), colA)
-        posA' <- (posA ^+^) ^<< integral -< vA
+        vA <- (vel o2 ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), colA)
+        posA' <- (pos o2 ^+^) ^<< integral -< vA
         -- return new GameState
-    returnA -< [GameObject posS' vS accS Player, GameObject posA'  vA accA Enemy]
+    returnA -< [GameObject posS' vS (acc o1) Player, GameObject posA'  vA (acc o2) Enemy]
 
 
+-- rekursive gameSF
+gameSF' :: GameState -> SF (Acceleration, [Event Velocity]) GameState
+gameSF' [] = proc (_,[]) -> returnA -< []
+gameSF' (iObject : iObjects) = proc (acc, event:events) -> do
+    vS <- ((vel iObject) ^+^) ^<< integral -< acc
+    pS <- ((pos iObject) ^+^) ^<< integral -< vS
+    -- rekursiver aufruf
+    gameStates <- gameSF' iObjects -< (acc, events) -- Rekursion!
+    returnA -< (GameObject pS vS acc (objectType iObject)) : gameStates
+
+-- testweise
 --movementPlayerSF :: GameObject -> SF Acceleration GameObject
 --movementPlayerSF (GameObject iPos iVel iAcc Player) = proc accShip -> do
 --    rec
+--       velPre <- iPre velS -< vS
+--       col <- collisionSF -< (pos', velPre, )
 
 {- TODO: Hier müssen wir die korrekte neue Geschwindigkeit berechnen. 
 Dafür müssen wir Rotation, GameObjectMass, und GameObjectElas übergenen; 
@@ -98,6 +113,9 @@ Die Größe wird bereits für die Kollisionserkennung verwendet
 collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
     returnA -< if isColliding (p1,p2) || detectWall p1 || detectVertWall p1 then Event (detection v1 v2 (detectWall p1) (detectVertWall p1)) else NoEvent
+
+collision :: GameObject -> GameObject -> Event Velocity
+collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || detectVertWall (pos o1) then Event (detection (vel o1) (vel o2) (detectWall (pos o1)) (detectVertWall (pos o1))) else NoEvent
     
 detection :: Velocity -> Velocity -> Bool -> Bool-> Velocity
 detection (Vector _ vy) _ True False = Vector 0 ((-2)*vy)

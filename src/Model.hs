@@ -38,7 +38,14 @@ type Acceleration = Vector
 -- maybe incorporate radius
 -- data GameObjectMass = GameObjectMass
 
-data GameObject = GameObject Position Velocity Acceleration GameObjectType -- TODO + mass !
+-- old version: data GameObject = GameObject Position Velocity Acceleration GameObjectType -- TODO + mass !
+data GameObject = GameObject {
+    pos :: Position,
+    vel :: Velocity,
+    acc :: Acceleration,
+    objectType :: GameObjectType
+}
+
 data GameObjectType = Player | Enemy | Asteroid
 -- alternatively instead of defining GameObjectType?
 -- data GameObject = Player GameObjectMass | Enemy GameObjectMass
