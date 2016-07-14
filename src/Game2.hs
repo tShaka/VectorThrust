@@ -26,88 +26,14 @@ createPlayer = GameObject zeroVector zeroVector zeroVector Player
     
 createEnemy :: Position -> GameObject
 createEnemy pos = GameObject pos zeroVector zeroVector Enemy
-    
 
---refresh :: IORef Action -> GameState -> SF () (GameState)
---refresh actionRef gs = proc () -> 
-    
---sf :: sf1 >>> sf2
---sf1 :: SF () (GameState) -> SF () (Pos,Vel)
---sf2 :: SF () (Pos,Vel) -> SF () (GameState)
-    
-{-
-    
-accelerate :: IORef Action -> Pos -> Vel -> SF Acc (Pos,Vel)
-accelerate actionRef pos vel = do
-    action <- readIORef actionRef
-    accelerate' action pos vel
--}
-
-{-
-accelerate' :: Action -> Pos -> Vel -> SF Acc (Pos,Vel)
-accelerate' NONE pos vel = accelerate'' pos vel ((0.0),(0.0))
-accelerate' UP pos vel = accelerate'' pos vel ((0.0),(10.0))
-accelerate' DOWN pos vel = accelerate'' pos vel ((0.0),(-10.0))
-accelerate' LEFT pos vel = accelerate'' pos vel ((-10.0),(0.0))
-accelerate' RIGHT pos vel = accelerate'' pos vel ((10.0),(0.0))
--}
 
 -- TODO Rotation
 -- Variablen: Accel-Value acc, Rationswinkel rot (0 ist in diesem Beispiel oben)
 -- Formel y: acc * cos(rot*pi() / 180)
 -- Formel x: acc * sin(rot*pi() / 180)
 -- Roation sollte bei Druck auf KeyLeft / KeyRight einfach den Rotationswert modifizieren
-
--- TODO : Collision
---proc acc -> do
---     rec
---     (xs,vs) <- ship      -< (acc, dvs)
---     (xa,va) <- asteroid  -< (acc, dva)
---     let (dxs, dvs, dxa, dva) = coll (xs, vs, xa, va)
---      (x's, v's, x'a, v'a) <- sum? -< (dxs, dvs, dxa, dva)
---      returnA -< (x's, x'a)
-
-
-collision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
--- Ruft die Kollisionsfunktionen auf, die wir nachher auslagern werden
-collision (ps,vs,pa,va) = 
-    if isColliding (ps,pa) then afterCollision (ps,vs,pa,va) else if collidesWithWall (ps,pa) then afterWallCollision (ps,vs,pa,va) else (NoEvent, NoEvent, NoEvent, NoEvent) --(NoEvent,NoEvent,NoEvent,NoEvent)
-
-collidesWithWall :: (Position, Position) -> Bool
-collidesWithWall (Vector x y, Vector x' y')
-    | x < (-1) = True
-    | y < (-1) = True
-    | x > 1 = True
-    | y > 1 = True
-    | x' < (-1) = True
-    | y' < (-1) = True
-    | x' > 1 = True
-    | y' > 1 = True
-    | otherwise = False
     
-collidesWithWall' :: SF (Position,Velocity) (Event Velocity)
-collidesWithWall' = proc (Vector x y, vel) -> do
-    hit <- edge -< x < (-1) || x > 1 || y < (-1) || y > 1
-    returnA -< hit `tag` ((-1) *^ vel)
-    
-    
-afterWallCollision :: (Position, Velocity, Position, Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
-afterWallCollision (ps,vs,pa,va) = (dpos1, dv1, dpos2, dv2)
-    where
-        dpos1 = Event $ Vector (-0.01) (-0.01)
-        dv1 = Event $(-1) *^ vs
-        dpos2 = Event $ Vector (-0.01) (-0.01)
-        dv2 = Event $ (-10) *^ va
-    
-afterCollision :: (Position,Velocity,Position,Velocity) -> (Event Position, Event Velocity, Event Position, Event Velocity)
---Dreht bei einer Kollision einfach die involvierten Geschwindigkeiten um. 
---Wird später basierend auf Objektmasse und Impulsübertragung funktionieren.
-afterCollision (ps,vs,pa,va) = (dpos1,dv1,dpos2,dv2)
-    where
-        dpos1 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ ps
-        dv1 = Event $(-2) *^ vs
-        dpos2 = Event $ Vector (-1.01) (-1.01) --(Vector (-0.01) (-0.01)) ^+^ pa
-        dv2 = Event $ (-10) *^ va
     
 --Überprüft die Kollision von zwei Objekten. Aktuell haben wir nur 2.
 -- TODO: Andere Objekte als Kreise
@@ -159,18 +85,11 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
         posA' <- (posA ^+^) ^<< integral -< vA
         -- return new GameState
     returnA -< [GameObject posS' vS accS Player, GameObject posA'  vA accA Enemy]
-    {-
-    rec
-        dvs <- collidesWithWall' -< (posS,accShip)
-        vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, dvs)
-        --vs <- (velS ^+^) ^<< impulseIntegral -< (accShip, das)
-        ps <- (posS ^+^) ^<< integral -< vs
-        va <- (velA ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), daa)
-        pa <- (posA ^+^) ^<< integral -< va
-    returnA -< [GameObject ps vs accS Player, GameObject pa va accA Enemy]
-        where
-            (dps, das, dpa, daa) = collision (posS,velS,posA,velA)
--}
+
+
+--movementPlayerSF :: GameObject -> SF Acceleration GameObject
+--movementPlayerSF (GameObject iPos iVel iAcc Player) = proc accShip -> do
+--    rec
 
 {- TODO: Hier müssen wir die korrekte neue Geschwindigkeit berechnen. 
 Dafür müssen wir Rotation, GameObjectMass, und GameObjectElas übergenen; 
@@ -178,12 +97,12 @@ Die Größe wird bereits für die Kollisionserkennung verwendet
 -}
 collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
-    hit <- edge -< isColliding (p1,p2) || detectWall p1
-    returnA -< (hit `tag` detection v1 v2 (detectWall p1))
+    returnA -< if isColliding (p1,p2) || detectWall p1 || detectVertWall p1 then Event (detection v1 v2 (detectWall p1) (detectVertWall p1)) else NoEvent
     
-detection :: Velocity -> Velocity -> Bool -> Velocity
-detection v1 _ True = (-2) *^ v1
-detection v1 v2 False = 2 *^ afterColVel v1 v2
+detection :: Velocity -> Velocity -> Bool -> Bool-> Velocity
+detection (Vector _ vy) _ True False = Vector 0 ((-2)*vy)
+detection (Vector vx _) _ False True = Vector ((-2)*vx) 0
+detection v1 v2 False False = 2 *^ afterColVel v1 v2
 
 afterColVel :: Velocity -> Velocity -> Velocity
 --afterColVel v1 v2 = ( (0.5 - elasS') +^(((-1) * elasS') *^ v1) ^+^ ( + (massA / massS) * 0.5) *^ v2)
@@ -199,19 +118,17 @@ VelS' = (ElasS' * VelS * (-1) + (0.5 - ElasS')) + (MassA `div` MassS) * VelA * 0
         => Wie wir IsProjectile abfragen, müssen wir noch sehen. 
            Die höchste Elastizität, die das System unterstützt, ist damit 50% (1.0)
 -}
-    
-    
-wallCollisionSF :: SF (Position,Velocity) (Event Velocity)
-wallCollisionSF = proc (p, v) -> do
-    hit <- edge -< detectWall p
-    returnA -< (hit `tag` ((-2) *^ v))
 
 detectWall :: Position -> Bool
 detectWall (Vector x y)
-    | x < (-1) = True
-    | x > 1 = True
     | y < (-1) = True
     | y > 1 = True
+    | otherwise = False
+
+detectVertWall :: Position -> Bool
+detectVertWall (Vector x y)
+    | x < (-1) = True
+    | x > 1 = True
     | otherwise = False
     
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
