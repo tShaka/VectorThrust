@@ -7,7 +7,9 @@ Die Größe wird bereits für die Kollisionserkennung verwendet
 --collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 --collisionSF = proc (p1,v1,p2,v2) -> do
 --    hit <- edge -< isColliding (p1,p2) || detectWall p1 || detectVertWall p1
--    returnA -< (hit `tag` detection v1 v2 (detectWall p1) (detectVertWall p1))
+--    returnA -< (hit `tag` detection v1 v2 (detectWall p1) (detectVertWall p1))
+
+
 collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
     returnA -< if isColliding (p1,p2) || detectWall p1 || detectVertWall p1 then Event (detection v1 v2 p1 p2 (detectWall p1) (detectVertWall p1)) else NoEvent
