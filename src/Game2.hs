@@ -83,21 +83,48 @@ gameSF [o1, o2] = proc accShip -> do
         -- movement + collision enemy
         velPreA <- iPre (vel o2) -< vA
         colA <- collisionSF -< (posA', velPreA, posS', velPreS)
+        --let colA = collision o2 o1
         vA <- (vel o2 ^+^) ^<< impulseIntegral -< (Vector (-0.01) (-0.01), colA)
         posA' <- (pos o2 ^+^) ^<< integral -< vA
         -- return new GameState
     returnA -< [GameObject posS' vS (acc o1) Player, GameObject posA'  vA (acc o2) Enemy]
+
+-- Kollisionserkennung für alle Objekte im GameState - die Reihenfolge der Ausgabe entspricht der Eingabe
+collisionDetection :: GameState -> [Event Velocity]
+collisionDetection gs = map (\o -> collision'' o (drop 1 gs)) gs
+
+-- Kollisionserkennung für ein GameObjekt - Kollision mit allen anderen GameObjects im GameState wird berechnet
+collision' :: GameObject -> [GameObject] -> [Event Velocity]
+collision' o1 [] = []
+collision' o1 (o:os) = collision o1 o : collision' o1 os
+
+-- Kollisionserkennung für ein GameObjekt - Gibt das "größte" Kollisionsevent aus allen Kollisionen dieses GameObjects zurück
+collision'' :: GameObject -> [GameObject] -> Event Velocity
+collision'' o1 os = biggestEvent (collision' o1 os)
+
+-- Wählt aus gegebener Liste von Kollisionsevents das "größte" aus
+biggestEvent :: [Event Velocity] -> Event Velocity
+biggestEvent (e1@(Event x) : e2@(Event y) : []) = if (x `dot` x) < (y `dot` y) then e2 else e1
+biggestEvent (e1@(Event x) : e2@(Event y) : xs) = if (x `dot` x) < (y `dot` y) then biggestEvent (e2:xs) else biggestEvent (e1:xs)
 
 
 -- rekursive gameSF
 gameSF' :: GameState -> SF (Acceleration, [Event Velocity]) GameState
 gameSF' [] = proc (_,[]) -> returnA -< []
 gameSF' (iObject : iObjects) = proc (acc, event:events) -> do
-    vS <- ((vel iObject) ^+^) ^<< integral -< acc
+    vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, event)
     pS <- ((pos iObject) ^+^) ^<< integral -< vS
     -- rekursiver aufruf
     gameStates <- gameSF' iObjects -< (acc, events) -- Rekursion!
     returnA -< (GameObject pS vS acc (objectType iObject)) : gameStates
+
+-- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
+mainGameSF :: GameState -> SF Acceleration GameState
+mainGameSF gs = proc acc -> do
+    rec
+        let colEvents =  collisionDetection gs
+        gs' <- gameSF' gs -< (acc, colEvents)
+    returnA -< gs'
 
 -- testweise
 --movementPlayerSF :: GameObject -> SF Acceleration GameObject
