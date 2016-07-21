@@ -155,14 +155,17 @@ detection (Vector vx _) _ _ _ False True = Vector ((-2)*vx) 0
 detection v1 v2 p1 p2 False False = 2 *^ afterColVel v1 v2 p1 p2
 
 afterColVel :: Velocity -> Velocity -> Position -> Position -> Velocity
-afterColVel v1 v2 p1 p2 = (((-1) * elasS') *^ v1) ^+^ (((massA / massS) * (-0.9)) *^ v1p)
+afterColVel v1 v2 p1 p2 = --(((-1) * elas1') *^ v1) ^+^ 
+        (((mass1 / mass2) * (-0.9)) *^ v2s)
         where 
-         elasS' = elasS * (1 - 0) * 0.1
-         elasS = 1
-         massA = 1
-         massS = 1
+         elas1' = elas1 * (1 - 0) * 0.1
+         elas1 = 1
+         mass1 = 1
+         mass2 = 1
          v1p = ((v1 `dot` dist) / (dist `dot` dist)) *^ dist
+         v2p = ((v2 `dot` dist) / (dist `dot` dist)) *^ dist
          v1s = v1 ^-^ v1p
+         v2s = v2 ^-^ v2p
          dist = p1 ^-^ p2
          --dist = distance dpos
 {-
