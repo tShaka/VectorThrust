@@ -115,7 +115,9 @@ biggestEvent (e1@(Event x) : e2@(Event y) : xs) = if (x `dot` x) < (y `dot` y) t
 -- rekursive gameSF
 gameSF' :: GameState -> SF (Acceleration, [Event Velocity]) GameState
 gameSF' [] = proc (_,[]) -> returnA -< []
-gameSF' (iObject : iObjects) = proc (acc, event:events) -> do
+gameSF' (iObject : iObjects) = proc (accS, event:events) -> do
+    -- Player has acceleration depending on input - Enemies acceleration is constant
+    let acc = if (objectType iObject) == Player then accS else Vector (-0.1) (-0.1) 
     vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, event)
     pS <- ((pos iObject) ^+^) ^<< integral -< vS
     -- rekursiver aufruf
@@ -126,16 +128,11 @@ gameSF' (iObject : iObjects) = proc (acc, event:events) -> do
 mainGameSF :: GameState -> SF Acceleration GameState
 mainGameSF gs = proc acc -> do
     rec
-        let colEvents = collisionDetection gs
+        preGs <- iPre gs -< gs'
+        let colEvents = collisionDetection preGs
         gs' <- gameSF' gs -< (acc, colEvents)
     returnA -< gs'
 
--- testweise
---movementPlayerSF :: GameObject -> SF Acceleration GameObject
---movementPlayerSF (GameObject iPos iVel iAcc Player) = proc accShip -> do
---    rec
---       velPre <- iPre velS -< vS
---       col <- collisionSF -< (pos', velPre, )
 
 {- TODO: Hier müssen wir die korrekte neue Geschwindigkeit berechnen. 
 Dafür müssen wir Rotation, GameObjectMass, und GameObjectElas übergenen; 
@@ -165,6 +162,7 @@ afterColVel v1 v2 p1 p2 = (((-1) * elasS') *^ v1) ^+^ (((massA / massS) * (-0.9)
          v1s = v1 ^-^ v1p
          dist = p1 ^-^ p2
          --dist = distance dpos
+
 {-
 afterColVel :: Velocity -> Velocity -> Velocity
 afterColVel v1 v2 = (((-1) * elasS') *^ v1) ^+^ (((massA / massS) * 0.5) *^ v2)
