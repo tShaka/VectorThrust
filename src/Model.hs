@@ -30,6 +30,7 @@ instance VectorSpace Vector GLfloat where
     Vector x1 y1 ^+^ Vector x2 y2 = Vector (x1+x2) (y1+y2)
     Vector x1 y1 ^-^ Vector x2 y2 = Vector (x1-x2) (y1-y2)
     Vector x1 y1 `dot` Vector x2 y2 = x1*x2 + y1*y2
+    --Vector x1 y1 `cross` Vector x2 y2 = Vector (x1*x2) (y1*y2)
 instance Eq Vector where
     Vector x1 y1 == Vector x2 y2
         | x1 == x2 && y1 == y2 = True
