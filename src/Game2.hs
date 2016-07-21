@@ -156,7 +156,7 @@ detection v1 v2 p1 p2 False False = 2 *^ afterColVel v1 v2 p1 p2
 
 afterColVel :: Velocity -> Velocity -> Position -> Position -> Velocity
 afterColVel v1 v2 p1 p2 = --(((-1) * elas1') *^ v1) ^+^ 
-        (((mass1 / mass2) * (-0.9)) *^ v2s)
+        (((mass2 / mass1) * (-1)) *^ v2s)
         where 
          elas1' = elas1 * (1 - 0) * 0.1
          elas1 = 1
