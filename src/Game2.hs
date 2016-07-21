@@ -96,7 +96,9 @@ collisionDetection gs = map (\o -> collision'' o (drop 1 gs)) gs
 -- Kollisionserkennung für ein GameObjekt - Kollision mit allen anderen GameObjects im GameState wird berechnet
 collision' :: GameObject -> [GameObject] -> [Event Velocity]
 collision' o1 [] = []
-collision' o1 (o:os) = collision o1 o : collision' o1 os
+collision' o1 (o2:os)
+    | o1 == o2 = collision' o1 os
+    | otherwise = collision o1 o2 : collision' o1 os
 
 -- Kollisionserkennung für ein GameObjekt - Gibt das "größte" Kollisionsevent aus allen Kollisionen dieses GameObjects zurück
 collision'' :: GameObject -> [GameObject] -> Event Velocity
@@ -104,6 +106,8 @@ collision'' o1 os = biggestEvent (collision' o1 os)
 
 -- Wählt aus gegebener Liste von Kollisionsevents das "größte" aus
 biggestEvent :: [Event Velocity] -> Event Velocity
+biggestEvent [] = NoEvent
+biggestEvent (e:[]) = e
 biggestEvent (e1@(Event x) : e2@(Event y) : []) = if (x `dot` x) < (y `dot` y) then e2 else e1
 biggestEvent (e1@(Event x) : e2@(Event y) : xs) = if (x `dot` x) < (y `dot` y) then biggestEvent (e2:xs) else biggestEvent (e1:xs)
 
@@ -122,7 +126,7 @@ gameSF' (iObject : iObjects) = proc (acc, event:events) -> do
 mainGameSF :: GameState -> SF Acceleration GameState
 mainGameSF gs = proc acc -> do
     rec
-        let colEvents =  collisionDetection gs
+        let colEvents = collisionDetection gs
         gs' <- gameSF' gs -< (acc, colEvents)
     returnA -< gs'
 
@@ -215,7 +219,7 @@ createAWindow title = do
     -- saves input
     actionRef <- newIORef AccNone
     -- set up ReactHandle
-    rh <- reactInit (initr) (actuate) (gameSF initGameState)
+    rh <- reactInit (initr) (actuate) (mainGameSF initGameState)
     -- set up Callbacks
     displayCallback $= display
     idleCallback $=  Just (idle timeRef actionRef rh)
@@ -227,7 +231,7 @@ createAWindow title = do
     
 -- creates initial GameState
 initGameState :: GameState
-initGameState = [createPlayer, createEnemy (Vector 0.7 0.9)]
+initGameState = [createPlayer, createEnemy (Vector 0.5 0.4)]
     
 
 ----------------- reactimate functions     ------------------
@@ -314,13 +318,13 @@ bouncingBall y0 = bbAux y0 0.0
 type Sprite = [Position] -- TODO rotation
 
 renderScene :: GameState -> IO ()
-renderScene [GameObject posS vs accS Player, GameObject posA _ _ Enemy] = do
+renderScene [GameObject posS vS accS Player, GameObject posA _ _ Enemy] = do
     clear [ColorBuffer]
     loadIdentity
     --mapM_ renderGameObject gs
     renderPlayer posS
     renderEnemy posA
-    print (posS ^-^ posA)
+    print (posS) -- ^-^ posA)
     flush
 
 {-
