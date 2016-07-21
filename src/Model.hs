@@ -11,14 +11,16 @@ module Model
 , GameObjectType(..)
 , GameState(..)
 , Rotation(..)
-, GameObjectSpin(..)
-, GameObjectMass(..)
-, GameObjectElas(..)
-, GameObjectSize(..)
+, Spin(..)
+, Mass(..)
+, Elasticity(..)
+, ObjectSize(..)
 , IsProjectile(..)
+, Health(..)
+, Damage(..)
 ) where
 
-import Graphics.UI.GLUT hiding (Position, Level)
+import Graphics.UI.GLUT hiding (Position, Level, Size)
 import FRP.Yampa.VectorSpace
 
 
@@ -64,10 +66,12 @@ data GameObjectType = Player | Enemy | Asteroid
 type GameState = [GameObject]
 
 type Rotation = GLfloat
-type GameObjectSpin = GLfloat
-type GameObjectMass = GLfloat
-type GameObjectSize = GLfloat
-type GameObjectElas = GLfloat
+type Spin = GLfloat
+type Mass = GLfloat
+type ObjectSize = GLfloat
+type Elasticity = GLfloat
+type Health = GLfloat
+type Damage = GLfloat
 --New input, couldn't test @univ:
 type IsProjectile = Bool
 
