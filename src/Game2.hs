@@ -152,14 +152,14 @@ collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || dete
 detection :: Velocity -> Velocity -> Position -> Position -> Bool -> Bool-> Velocity
 detection (Vector _ vy) _ _ _ True False = Vector 0 ((-2)*vy)
 detection (Vector vx _) _ _ _ False True = Vector ((-2)*vx) 0
-detection v1 v2 p1 p2 False False = 2 *^ afterColVel v1 v2 p1 p2
+detection v1 v2 p1 p2 False False = afterColVel v1 v2 p1 p2
 
 afterColVel :: Velocity -> Velocity -> Position -> Position -> Velocity
 afterColVel v1 v2 p1 p2 = --(((-1) * elas1') *^ v1) ^+^ 
-        (((mass2 / mass1) * (-1)) *^ v2s)
+        (((mass2 / mass1) * (1)) *^ v2s) ^+^ v1p ^-^ v1
         where 
-         elas1' = elas1 * (1 - 0) * 0.1
-         elas1 = 1
+         --elas1' = elas1 * (1 - 0) * 0.1
+         --elas1 = 1
          mass1 = 1
          mass2 = 1
          v1p = ((v1 `dot` dist) / (dist `dot` dist)) *^ dist
