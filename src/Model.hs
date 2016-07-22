@@ -51,14 +51,14 @@ data GameObject = GameObject {
     vel :: Velocity,
     acc :: Acceleration,
     objectType :: GameObjectType
-}
+} deriving Show
 instance Eq GameObject where
     GameObject pos1 vel1 acc1 type1 == GameObject pos2 vel2 acc2 type2
         | pos1 == pos2 && vel1 == vel2 && acc1 == acc2 && type1 == type2 = True
         | otherwise = False
 
 data GameObjectType = Player | Enemy | Asteroid
-    deriving Eq
+    deriving (Eq, Show)
 -- alternatively instead of defining GameObjectType?
 -- data GameObject = Player GameObjectMass | Enemy GameObjectMass
 

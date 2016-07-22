@@ -11,7 +11,10 @@
 
 {-# LANGUAGE Arrows #-}
 
+module Main where
+
 import Model
+import Game
 import Graphics.UI.GLUT hiding (position, Position)
 import Data.IORef
 import FRP.Yampa
@@ -20,37 +23,20 @@ import Control.Arrow
 import Data.Time.Clock
 import Data.Maybe
 
-
-createPlayer :: GameObject
-createPlayer = GameObject zeroVector zeroVector zeroVector Player
-    
-createEnemy :: Position -> GameObject
-createEnemy pos = GameObject pos zeroVector zeroVector Enemy
-
-
 -- TODO Rotation
 -- Variablen: Accel-Value acc, Rationswinkel rot (0 ist in diesem Beispiel oben)
 -- Formel y: acc * cos(rot*pi() / 180)
 -- Formel x: acc * sin(rot*pi() / 180)
 -- Roation sollte bei Druck auf KeyLeft / KeyRight einfach den Rotationswert modifizieren
     
-    
---Überprüft die Kollision von zwei Objekten. Aktuell haben wir nur 2.
--- TODO: Andere Objekte als Kreise
--- TODO: distance durch norm ersetzen    
-isColliding :: (Position,Position) -> Bool
-isColliding (posS,posA) = ((distance dpos) - (rs + ra)) <= sigma
-    where
-        rs = 0.15 :: GLfloat
-        ra = 0.10 :: GLfloat
-        dpos = posS ^-^ posA
-        sigma = 0
 --TODO: Collision Angle:
 -- distance :: Vector -> GLfloat
 -- ColAng = arcsin ( y/distance)*180 / pi()
-        
+
+{-
 distance :: Vector -> GLfloat
 distance (Vector x y) = sqrt(x*x + y*y)
+-}
         
         {-}
 gameSF :: GameState -> SF Acceleration GameState
@@ -89,82 +75,15 @@ gameSF [o1, o2] = proc accShip -> do
         -- return new GameState
     returnA -< [GameObject posS' vS (acc o1) Player, GameObject posA'  vA (acc o2) Enemy]
 
--- Kollisionserkennung für alle Objekte im GameState - die Reihenfolge der Ausgabe entspricht der Eingabe
-collisionDetection :: GameState -> [Event Velocity]
-collisionDetection gs = map (\o -> collision'' o (drop 1 gs)) gs
-
--- Kollisionserkennung für ein GameObjekt - Kollision mit allen anderen GameObjects im GameState wird berechnet
-collision' :: GameObject -> [GameObject] -> [Event Velocity]
-collision' o1 [] = []
-collision' o1 (o2:os)
-    | o1 == o2 = collision' o1 os
-    | otherwise = collision o1 o2 : collision' o1 os
-
--- Kollisionserkennung für ein GameObjekt - Gibt das "größte" Kollisionsevent aus allen Kollisionen dieses GameObjects zurück
-collision'' :: GameObject -> [GameObject] -> Event Velocity
-collision'' o1 os = biggestEvent (collision' o1 os)
-
--- Wählt aus gegebener Liste von Kollisionsevents das "größte" aus
-biggestEvent :: [Event Velocity] -> Event Velocity
-biggestEvent [] = NoEvent
-biggestEvent (e:[]) = e
-biggestEvent (e1@(Event x) : e2@(Event y) : []) = if (x `dot` x) < (y `dot` y) then e2 else e1
-biggestEvent (e1@(Event x) : e2@(Event y) : xs) = if (x `dot` x) < (y `dot` y) then biggestEvent (e2:xs) else biggestEvent (e1:xs)
-
-
--- rekursive gameSF
-gameSF' :: GameState -> SF (Acceleration, [Event Velocity]) GameState
-gameSF' [] = proc (_,[]) -> returnA -< []
-gameSF' (iObject : iObjects) = proc (accS, event:events) -> do
-    -- Player has acceleration depending on input - Enemies acceleration is constant
-    let acc = if (objectType iObject) == Player then accS else Vector (-0.1) (-0.1) 
-    vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, event)
-    pS <- ((pos iObject) ^+^) ^<< integral -< vS
-    -- rekursiver aufruf
-    gameStates <- gameSF' iObjects -< (acc, events) -- Rekursion!
-    returnA -< (GameObject pS vS acc (objectType iObject)) : gameStates
-
--- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
-mainGameSF :: GameState -> SF Acceleration GameState
-mainGameSF gs = proc acc -> do
-    rec
-        preGs <- iPre gs -< gs'
-        let colEvents = collisionDetection preGs
-        gs' <- gameSF' gs -< (acc, colEvents)
-    returnA -< gs'
-
 
 {- TODO: Hier müssen wir die korrekte neue Geschwindigkeit berechnen. 
 Dafür müssen wir Rotation, GameObjectMass, und GameObjectElas übergenen; 
 Die Größe wird bereits für die Kollisionserkennung verwendet
 -}
+
 collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
 collisionSF = proc (p1,v1,p2,v2) -> do
     returnA -< if isColliding (p1,p2) || detectWall p1 || detectVertWall p1 then Event (detection v1 v2 p1 p2 (detectWall p1) (detectVertWall p1)) else NoEvent
-
-collision :: GameObject -> GameObject -> Event Velocity
-collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || detectVertWall (pos o1) then Event (detection (vel o1) (vel o2) (pos o1) (pos o2) (detectWall (pos o1)) (detectVertWall (pos o1))) else NoEvent
-    
--- TODO: GameObject nutzen    
-detection :: Velocity -> Velocity -> Position -> Position -> Bool -> Bool-> Velocity
-detection (Vector _ vy) _ _ _ True False = Vector 0 ((-2)*vy)
-detection (Vector vx _) _ _ _ False True = Vector ((-2)*vx) 0
-detection v1 v2 p1 p2 False False = afterColVel v1 v2 p1 p2
-
-afterColVel :: Velocity -> Velocity -> Position -> Position -> Velocity
-afterColVel v1 v2 p1 p2 = --(((-1) * elas1') *^ v1) ^+^ 
-        (((mass2 / mass1) * (1)) *^ v2s) ^+^ v1p ^-^ v1
-        where 
-         --elas1' = elas1 * (1 - 0) * 0.1
-         --elas1 = 1
-         mass1 = 1
-         mass2 = 1
-         v1p = ((v1 `dot` dist) / (dist `dot` dist)) *^ dist
-         v2p = ((v2 `dot` dist) / (dist `dot` dist)) *^ dist
-         v1s = v1 ^-^ v1p
-         v2s = v2 ^-^ v2p
-         dist = p1 ^-^ p2
-         --dist = distance dpos
 
 {-
 afterColVel :: Velocity -> Velocity -> Velocity
@@ -181,25 +100,14 @@ VelS' = (ElasS' * VelS * (-1) + (0.5 - ElasS')) + (MassA `div` MassS) * VelA * 0
         => Wie wir IsProjectile abfragen, müssen wir noch sehen. 
            Die höchste Elastizität, die das System unterstützt, ist damit 50% (1.0)
 -}
-
-detectWall :: Position -> Bool
-detectWall (Vector x y)
-    | y < (-1) = True
-    | y > 1 = True
-    | otherwise = False
-
-detectVertWall :: Position -> Bool
-detectVertWall (Vector x y)
-    | x < (-1) = True
-    | x > 1 = True
-    | otherwise = False
     
+{-
 accelerate :: Position -> Velocity -> SF Acceleration (Position,Velocity)
 accelerate pos0 v0 = proc acc -> do
     v <- (v0^+^) ^<< integral -< acc
     pos <- (pos0^+^) ^<< integral -< v
     returnA -<(pos,v)
-    
+-}
     
 -- set up OpenGL and start program
 main :: IO ()
@@ -226,14 +134,8 @@ createAWindow title = do
     idleCallback $=  Just (idle timeRef actionRef rh)
     reshapeCallback $= Just resizeWindow
     keyboardMouseCallback $= Just (keyboardMouse actionRef)
-    
     return ()
 
-    
--- creates initial GameState
-initGameState :: GameState
-initGameState = [createPlayer, createEnemy (Vector 0.5 0.4)]
-    
 
 ----------------- reactimate functions     ------------------
 -- typed: ReactHandle Input Output -> ReactHandle () (Float,Float)
@@ -334,7 +236,7 @@ renderScene [GameObject posS vS accS Player, GameObject posA _ _ Enemy] = do
     --mapM_ renderGameObject gs
     renderPlayer posS
     renderEnemy posA
-    print (posS) -- ^-^ posA)
+    --print (posS) -- ^-^ posA)
     flush
 
 {-
