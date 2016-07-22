@@ -279,29 +279,24 @@ resizeWindow size = do
     -- viewport $= (Graphics.UI.GLUT.Position 0 0, size)
     return ()
 
-{-
 keyboardMouse :: IORef Action -> KeyboardMouseCallback
-keyboardMouse inputRef key Down _ _ = inputRef $~! const case key of
-    (SpecialKey KeyLeft) -> AccLeft
-    (SpecialKey KeyRight) -> AccRight
-    (SpecialKey KeyUp) -> AccUp
-    (SpecialKey KeyDown) -> AccDown
-    _ -> return ()
-keyboardMouse inputRef key Up _ _ = inputRef $~! \_ -> AccNone
+keyboardMouse inputRef (SpecialKey KeyLeft) Down _ _ = inputRef $= AccLeft
+keyboardMouse inputRef (SpecialKey KeyRight) Down _ _ = inputRef $= AccRight
+keyboardMouse inputRef (SpecialKey KeyUp) Down _ _ = inputRef $= AccUp
+keyboardMouse inputRef (SpecialKey KeyDown) Down _ _ = inputRef $= AccDown
+keyboardMouse inputRef _ Up _ _ = inputRef $= AccNone
 keyboardMouse _ _ _ _ _ = return ()
 
--}
-
-keyboardMouse :: IORef Action -> KeyboardMouseCallback
+{-}
 keyboardMouse inputRef key Down _ _ = case key of
-    (SpecialKey KeyLeft) -> inputRef $~! \_ -> AccLeft
-    (SpecialKey KeyRight) -> inputRef $~! \_ -> AccRight
-    (SpecialKey KeyUp) -> inputRef $~! \_ -> AccUp
-    (SpecialKey KeyDown) -> inputRef $~! \_ -> AccDown
+    (SpecialKey KeyLeft) -> inputRef $= AccLeft
+    (SpecialKey KeyRight) -> inputRef $= AccRight
+    (SpecialKey KeyUp) -> inputRef $= AccUp
+    (SpecialKey KeyDown) -> inputRef $= AccDown
     _ -> return ()
 keyboardMouse inputRef key Up _ _ = inputRef $~! \_ -> AccNone
 keyboardMouse _ _ _ _ _ = return ()
-
+-}
    
     
 ----------------- physics signal function ---------------------
