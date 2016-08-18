@@ -54,6 +54,7 @@ gameSF [(GameObject posS velS accS Player),(GameObject posA velA accA Enemy)] = 
     returnA -< [GameObject (ps' ^+^ posS) (vs' ^+^ velS) accS Player, GameObject (pa' ^+^ posA) (va' ^+^ velA) accA Enemy]
 -}
 
+{-}
 --Neue Kollisionsfunktion
 --TODO: Geschwindigkeitsberechnung
 gameSF :: GameState -> SF Acceleration GameState
@@ -74,16 +75,13 @@ gameSF [o1, o2] = proc accShip -> do
         posA' <- (pos o2 ^+^) ^<< integral -< vA
         -- return new GameState
     returnA -< [GameObject posS' vS (acc o1) Player, GameObject posA'  vA (acc o2) Enemy]
-
+-}
 
 {- TODO: Hier müssen wir die korrekte neue Geschwindigkeit berechnen. 
 Dafür müssen wir Rotation, GameObjectMass, und GameObjectElas übergenen; 
 Die Größe wird bereits für die Kollisionserkennung verwendet
 -}
 
-collisionSF :: SF (Position,Velocity,Position,Velocity) (Event Velocity)
-collisionSF = proc (p1,v1,p2,v2) -> do
-    returnA -< if isColliding (p1,p2) || detectWall p1 || detectVertWall p1 then Event (detection v1 v2 p1 p2 (detectWall p1) (detectVertWall p1)) else NoEvent
 
 {-
 afterColVel :: Velocity -> Velocity -> Velocity
