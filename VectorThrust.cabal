@@ -19,7 +19,7 @@ Library
   Build-Depends: base, Yampa, GLUT, time
   hs-source-dirs:      src
   exposed-modules:
-    Model, Game
+    Model, Game, VTGraphics
 
 executable VectorThrust
   main-is:             Main.hs
