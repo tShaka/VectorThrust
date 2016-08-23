@@ -124,8 +124,8 @@ afterColVel' :: Velocity -> Velocity -> Position -> Position -> (Event Velocity,
 afterColVel' v1 v2 p1 p2 = (Event ((-2)*^v1), Event (p1 ^-^ (Vector 0.001 0.001)))
 
 afterColVel :: GameObject -> GameObject -> (Event Velocity, Event Position)
-afterColVel ob1 ob2 = --(((-1) * elas1') *^ v1) ^+^ 
-        (Event (((((mas ob2) / (mas ob1)) * (1)) *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((-1) *^ dist))
+afterColVel ob1 ob2 = 
+        (Event (((((mas ob2) / (mas ob1)) * (1)) *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((-0.1) *^ dist))
         where 
          --elas1' = elas1 * (1 - 0) * 0.1
          --elas1 = 1

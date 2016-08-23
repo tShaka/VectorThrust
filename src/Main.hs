@@ -90,6 +90,8 @@ resizeWindow size = do
     -- viewport $= (Graphics.UI.GLUT.Position 0 0, size)
     return ()
 
+--Wir brauchen hier das GameObject, wenn die Beschleunigung auf der Rotation basieren soll!    
+
 -- callback for handling keyboardMouse and mouse input
 keyboardMouse :: IORef Action -> KeyboardMouseCallback
 keyboardMouse inputRef (SpecialKey KeyLeft) Down _ _ = inputRef $= AccLeft
