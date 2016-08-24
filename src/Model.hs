@@ -7,6 +7,9 @@ module Model
 , Acceleration(..)
 , Position(..)
 , Action(..)
+, ActionAcceleration(..)
+, ActionTurn(..)
+, actionNone
 , GameObject(..)
 , GameObjectType(..)
 , GameState(..)
@@ -58,7 +61,7 @@ data GameObject = GameObject {
     dmg :: Damage,
     objectType :: GameObjectType
 } deriving (Show, Eq)
-
+        
 
 data GameObjectType = Player | Enemy | Asteroid | Projectile
     deriving (Eq, Show)
@@ -86,4 +89,17 @@ type Damage = GLfloat
 --New input, couldn't test @univ:
 --type IsProjectile = Bool
 
-data Action = AccLeft | AccRight | AccUp | AccDown | AccNone
+data Action = Action {
+    actionAcceleration :: ActionAcceleration, 
+    actionTurn :: ActionTurn
+    }
+    deriving (Eq, Show)
+    
+actionNone :: Action
+actionNone = Action AccNone TurnNone
+
+data ActionAcceleration = AccUp | AccDown | AccNone
+    deriving (Eq, Show)
+
+data ActionTurn = TurnLeft | TurnRight | TurnNone
+    deriving (Eq, Show)

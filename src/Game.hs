@@ -19,26 +19,39 @@ createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 0.8 10000 0 Ene
 
 
 -- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
-mainGameSF :: GameState -> SF Acceleration GameState
-mainGameSF gs = proc acc -> do
+mainGameSF :: GameState -> SF Action GameState
+mainGameSF gs = proc act -> do
     rec
         preGs <- iPre gs -< gs'
         let colEvents = collisionDetection preGs
-        gs' <- gameSF' gs -< (acc, colEvents)
+        gs' <- gameSF' gs -< (act, colEvents)
     returnA -< gs'
     
 -- rekursive gameSF
-gameSF' :: GameState -> SF (Acceleration, [(Event Velocity, Event Position)]) GameState
+gameSF' :: GameState -> SF (Action, [(Event Velocity, Event Position)]) GameState
 gameSF' [] = proc (_,[]) -> returnA -< []
-gameSF' (iObject : iObjects) = proc (accS, (deltaVel, deltaPos):events) -> do
+gameSF' (iObject : iObjects) = proc (actS, (deltaVel, deltaPos):events) -> do
     -- Player has acceleration depending on input - Enemies acceleration is constant
-    let acc = if (objectType iObject) == Player then accS else Vector (-0.1) (-0.1)    
+    let acc = if (objectType iObject) == Player then convAction actS else Vector (-0.1) (-0.1)    
     vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, deltaVel)
     pS <- ((pos iObject) ^+^) ^<< impulseIntegral -< (vS, deltaPos)
     -- rekursiver aufruf
-    gameStates <- gameSF' iObjects -< (acc, events) -- Rekursion!    
+    gameStates <- gameSF' iObjects -< (actS, events) -- Rekursion!    
     returnA -< (GameObject pS vS acc (rot iObject) (spn iObject) (mas iObject) (ela iObject) (size iObject) (hp iObject) (dmg iObject) (objectType iObject)) : gameStates
-    
+
+-- helper for converting input to acceleration
+convAction :: Action -> Acceleration
+convAction action = convAcc (actionAcceleration action) ^+^ convTurn (actionTurn action)
+
+convAcc :: ActionAcceleration -> Acceleration
+convAcc AccUp = Vector 0 1
+convAcc AccDown = Vector 0 (-1)
+convAcc AccNone = Vector 0 0
+
+convTurn :: ActionTurn -> Acceleration
+convTurn TurnLeft = Vector (-1) 0
+convTurn TurnRight = Vector 1 0
+convTurn TurnNone = Vector 0 0    
     
 -- Kollisionserkennung für alle Objekte im GameState - die Reihenfolge der Ausgabe entspricht der Eingabe
 collisionDetection :: GameState -> [(Event Velocity, Event Position)]
