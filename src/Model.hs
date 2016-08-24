@@ -65,6 +65,14 @@ data GameObjectType = Player | Enemy | Asteroid | Projectile
 -- alternatively instead of defining GameObjectType?
 -- data GameObject = Player GameObjectMass | Enemy GameObjectMass
 
+-- Radius der Spielergrafik
+sizePlayer :: GLfloat
+sizePlayer = 0.15
+
+-- Radius der Gegnergrafik
+sizeEnemy :: GLfloat
+sizeEnemy = 0.10
+
 -- GameState == Level in this case
 type GameState = [GameObject]
 
