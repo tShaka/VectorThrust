@@ -41,7 +41,7 @@ createAWindow title = do
     t <- getCurrentTime
     timeRef <- newIORef t
     -- saves input
-    actionRef <- newIORef AccNone
+    actionRef <- newIORef actionNone
     -- set up ReactHandle
     rh <- reactInit (initr) (actuate) (mainGameSF initGameState)
     -- set up Callbacks
@@ -55,11 +55,11 @@ createAWindow title = do
 ----------------- reactimate functions     ------------------
 
 -- init react
-initr :: IO Acceleration
-initr = return zeroVector
+initr :: IO Action
+initr = return actionNone
 
 --actuate react
-actuate :: ReactHandle Acceleration GameState -> Bool -> GameState -> IO Bool
+actuate :: ReactHandle Action GameState -> Bool -> GameState -> IO Bool
 actuate _ _ gameState = do 
     renderScene gameState
     return False
@@ -73,14 +73,14 @@ display = do
     
 -- callback which is called, if openGL is in idle state.
 -- main signal function is called from this callback and game logic goes one tick further.
-idle :: IORef UTCTime -> IORef Action -> ReactHandle Acceleration GameState -> IO ()
+idle :: IORef UTCTime -> IORef Action -> ReactHandle Action GameState -> IO ()
 idle timeRef inputRef rh = do
     now <- getCurrentTime
     lastTime <- readIORef timeRef
     writeIORef timeRef now
     input <- readIORef inputRef
     let dt = now `diffUTCTime` lastTime
-    react rh (realToFrac dt, Just (convAcc input))
+    react rh (realToFrac dt, Just input)
     return ()
     
 -- callback which is called, if window gets resized. Handles the resizing process.
@@ -94,17 +94,25 @@ resizeWindow size = do
 
 -- callback for handling keyboardMouse and mouse input
 keyboardMouse :: IORef Action -> KeyboardMouseCallback
+{-
 keyboardMouse inputRef (SpecialKey KeyLeft) Down _ _ = inputRef $= AccLeft
 keyboardMouse inputRef (SpecialKey KeyRight) Down _ _ = inputRef $= AccRight
 keyboardMouse inputRef (SpecialKey KeyUp) Down _ _ = inputRef $= AccUp
 keyboardMouse inputRef (SpecialKey KeyDown) Down _ _ = inputRef $= AccDown
 keyboardMouse inputRef _ Up _ _ = inputRef $= AccNone
-keyboardMouse _ _ _ _ _ = return ()
+keyboardMouse _ _ _ _ _ = return () -}
 
--- helper for converting input to acceleration
-convAcc :: Action -> Acceleration
-convAcc AccUp = Vector 0 1
-convAcc AccDown = Vector 0 (-1)
-convAcc AccLeft = Vector (-1) 0
-convAcc AccRight = Vector 1 0
-convAcc AccNone = Vector 0 0
+keyboardMouse inputRef (SpecialKey key) upDown _ _ = do 
+    actionState <- readIORef inputRef 
+    inputRef $= case (upDown , key) of
+        (Down, KeyUp) -> actionState { actionAcceleration = AccUp }
+        (Down, KeyDown) -> actionState { actionAcceleration = AccDown }
+        (Down, KeyLeft)  -> actionState { actionTurn = TurnLeft }
+        (Down, KeyRight)  -> actionState { actionTurn = TurnRight }
+        (Up, KeyUp) -> actionState { actionAcceleration = AccNone }
+        (Up, KeyDown) -> actionState { actionAcceleration = AccNone }
+        (Up, KeyLeft)  -> actionState { actionTurn = TurnNone }
+        (Up, KeyRight)  -> actionState { actionTurn = TurnNone }
+        _ -> actionState
+keyboardMouse _ _ _ _ _ = return () 
+
