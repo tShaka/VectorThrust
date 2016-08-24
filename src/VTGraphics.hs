@@ -9,11 +9,10 @@ type Sprite = [Position]
 
 -- render function to draw current GameState
 renderScene :: GameState -> IO ()
-renderScene [GameObject posS vS accS rotS _ _ _ sizeS _ _ Player, GameObject posA _ _ rotA _ _ _ sizeA _ _ Enemy] = do
+renderScene gs = do
     clear [ColorBuffer]
     loadIdentity
-    renderPlayer posS
-    renderEnemy posA
+    mapM renderGameObject gs
     flush 
 
 -- render function to draw given GameObject

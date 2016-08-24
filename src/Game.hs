@@ -9,7 +9,7 @@ import Graphics.UI.GLUT hiding (position, Position)
 
 -- creates initial GameState
 initGameState :: GameState
-initGameState = [createPlayer, createEnemy (Vector 0.5 0.4)]
+initGameState = [createPlayer, createEnemy (Vector 0.5 0.4), createEnemy (Vector 0.9 0.4)]
 
 createPlayer :: GameObject
 createPlayer = GameObject zeroVector zeroVector zeroVector 0 0 1 1 1 10000 0 Player
@@ -53,7 +53,11 @@ collision' o1 (o2:os)
 
 -- Kollisionserkennung für ein GameObjekt - Gibt das "größte" Kollisionsevent aus allen Kollisionen dieses GameObjects zurück
 collision'' :: GameObject -> [GameObject] -> (Event Velocity, Event Position)
-collision'' o1 os = biggestEvent (collision' o1 os)
+collision'' o1 os = biggestEvent $ filterNoEvents $ collision' o1 os
+
+-- filtert aus gegebener Liste von Kollisionsevents alle NoEvents aus
+filterNoEvents :: [(Event Velocity, Event Position)] -> [(Event Velocity, Event Position)]
+filterNoEvents events = filter (\(e,_) -> not (e == NoEvent)) events
 
 -- Wählt aus gegebener Liste von Kollisionsevents das "größte" aus
 biggestEvent :: [(Event Velocity, Event Position)] -> (Event Velocity, Event Position)
