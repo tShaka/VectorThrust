@@ -60,8 +60,8 @@ collision'' o1 os = biggestEvent (collision' o1 os)
 biggestEvent :: [(Event Velocity, Event Position)] -> (Event Velocity, Event Position)
 biggestEvent [] = (NoEvent, NoEvent)
 biggestEvent (e:[]) = e
-biggestEvent (e1@(Event x, _) : e2@(Event y, _) : []) = if (x `dot` x) < (y `dot` y) then e2 else e1
-biggestEvent (e1@(Event x, _) : e2@(Event y, _) : xs) = if (x `dot` x) < (y `dot` y) then biggestEvent (e2:xs) else biggestEvent (e1:xs)    
+biggestEvent (e1@(Event v1, _) : e2@(Event v2, _) : []) = if (v1 `dot` v1) < (v2 `dot` v2) then e2 else e1
+biggestEvent (e1@(Event v1, _) : e2@(Event v2, _) : es) = if (v1 `dot` v1) < (v2 `dot` v2) then biggestEvent (e2:es) else biggestEvent (e1:es)    
     
 -- neue Version testweise mit tupel output
 collision :: GameObject -> GameObject -> (Event Velocity, Event Position)
@@ -126,7 +126,9 @@ afterColVel' v1 v2 p1 p2 = (Event ((-2)*^v1), Event (p1 ^-^ (Vector 0.001 0.001)
 
 afterColVel :: GameObject -> GameObject -> (Event Velocity, Event Position)
 afterColVel ob1 ob2 = 
-        (Event ((( ((mas ob2) / (mas ob1)) * (ela ob1) ) *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((1) *^ overlap))
+        (Event ((
+        --( ((mas ob2) / (mas ob1)) * (ela ob1) )
+        1 *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((1) *^ overlap))
         where 
          v1p = (vel ob1 `dot` normedDist) *^ normedDist
          v2p = (vel ob2 `dot` normedDist) *^ normedDist
