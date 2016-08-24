@@ -20,13 +20,23 @@ createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 sizeEnemy 10000
 
 
 -- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
+mainGameSF :: GameState -> SF Action (GameState,[(Event Velocity, Event Position)])
+mainGameSF gs = proc act -> do
+    rec
+        preGs <- iPre gs -< gs'
+        let colEvents = collisionDetection preGs
+        gs' <- gameSF' gs -< (act, colEvents)
+    returnA -< (gs',colEvents)
+
+{- 
 mainGameSF :: GameState -> SF Action GameState
 mainGameSF gs = proc act -> do
     rec
         preGs <- iPre gs -< gs'
         let colEvents = collisionDetection preGs
         gs' <- gameSF' gs -< (act, colEvents)
-    returnA -< gs'
+    returnA -< gs'-}
+    
     
 -- rekursive gameSF
 gameSF' :: GameState -> SF (Action, [(Event Velocity, Event Position)]) GameState

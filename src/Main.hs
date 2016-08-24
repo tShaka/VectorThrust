@@ -43,7 +43,7 @@ createAWindow title = do
     -- saves input
     actionRef <- newIORef actionNone
     -- set up ReactHandle
-    rh <- reactInit (initr) (actuate) (mainGameSF initGameState)
+    rh <- reactInit (initr) (actuate) (mainGameSF initGameState >>> arr fst)
     -- set up Callbacks
     displayCallback $= display
     idleCallback $=  Just (idle timeRef actionRef rh)
