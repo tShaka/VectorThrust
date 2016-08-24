@@ -5,40 +5,54 @@ module Game where
 import FRP.Yampa
 import Model
 import Graphics.UI.GLUT hiding (position, Position, normalize)
-
+import Data.List
 
 -- creates initial GameState
 initGameState :: GameState
 initGameState = [createPlayer, createEnemy (Vector 0.2 0.2)]
+--initGameState = [createPlayer, createEnemy (Vector 0.5 0.4), createEnemy (Vector 0.9 0.4)]
 
 createPlayer :: GameObject
-createPlayer = GameObject zeroVector zeroVector zeroVector 0 0 1 1 1 10000 0 Player
+createPlayer = GameObject zeroVector zeroVector zeroVector 0 0 1 1 sizePlayer 10000 0 Player
     
 createEnemy :: Position -> GameObject
-createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 0.8 10000 0 Enemy
+createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 sizeEnemy 10000 0 Enemy
 
 
 -- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
-mainGameSF :: GameState -> SF Acceleration GameState
-mainGameSF gs = proc acc -> do
+mainGameSF :: GameState -> SF Action GameState
+mainGameSF gs = proc act -> do
     rec
         preGs <- iPre gs -< gs'
         let colEvents = collisionDetection preGs
-        gs' <- gameSF' gs -< (acc, colEvents)
+        gs' <- gameSF' gs -< (act, colEvents)
     returnA -< gs'
     
 -- rekursive gameSF
-gameSF' :: GameState -> SF (Acceleration, [(Event Velocity, Event Position)]) GameState
+gameSF' :: GameState -> SF (Action, [(Event Velocity, Event Position)]) GameState
 gameSF' [] = proc (_,[]) -> returnA -< []
-gameSF' (iObject : iObjects) = proc (accS, (deltaVel, deltaPos):events) -> do
+gameSF' (iObject : iObjects) = proc (actS, (deltaVel, deltaPos):events) -> do
     -- Player has acceleration depending on input - Enemies acceleration is constant
-    let acc = if (objectType iObject) == Player then accS else Vector (-0.1) (-0.1)    
+    let acc = if (objectType iObject) == Player then convAction actS else Vector (-0.1) (-0.1)    
     vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, deltaVel)
     pS <- ((pos iObject) ^+^) ^<< impulseIntegral -< (vS, deltaPos)
     -- rekursiver aufruf
-    gameStates <- gameSF' iObjects -< (acc, events) -- Rekursion!    
+    gameStates <- gameSF' iObjects -< (actS, events) -- Rekursion!    
     returnA -< (GameObject pS vS acc (rot iObject) (spn iObject) (mas iObject) (ela iObject) (size iObject) (hp iObject) (dmg iObject) (objectType iObject)) : gameStates
-    
+
+-- helper for converting input to acceleration
+convAction :: Action -> Acceleration
+convAction action = convAcc (actionAcceleration action) ^+^ convTurn (actionTurn action)
+
+convAcc :: ActionAcceleration -> Acceleration
+convAcc AccUp = Vector 0 1
+convAcc AccDown = Vector 0 (-1)
+convAcc AccNone = Vector 0 0
+
+convTurn :: ActionTurn -> Acceleration
+convTurn TurnLeft = Vector (-1) 0
+convTurn TurnRight = Vector 1 0
+convTurn TurnNone = Vector 0 0    
     
 -- Kollisionserkennung für alle Objekte im GameState - die Reihenfolge der Ausgabe entspricht der Eingabe
 collisionDetection :: GameState -> [(Event Velocity, Event Position)]
@@ -54,15 +68,23 @@ collision' o1 (o2:os)
     
 -- Kollisionserkennung für ein GameObjekt - Gibt das "größte" Kollisionsevent aus allen Kollisionen dieses GameObjects zurück
 collision'' :: GameObject -> [GameObject] -> (Event Velocity, Event Position)
-collision'' o1 os = biggestEvent (collision' o1 os)
+collision'' o1 os = biggestEvent $ filterNoEvents $ collision' o1 os
+
+-- filtert aus gegebener Liste von Kollisionsevents alle NoEvents aus
+filterNoEvents :: [(Event Velocity, Event Position)] -> [(Velocity, Position)]
+filterNoEvents [] = []
+filterNoEvents ((Event velocity, Event position):events) = (velocity, position): filterNoEvents events
+filterNoEvents (_ : events) = filterNoEvents events
 
 -- Wählt aus gegebener Liste von Kollisionsevents das "größte" aus
-biggestEvent :: [(Event Velocity, Event Position)] -> (Event Velocity, Event Position)
+biggestEvent :: [(Velocity, Position)] -> (Event Velocity, Event Position)
+
 biggestEvent [] = (NoEvent, NoEvent)
-biggestEvent (e:[]) = e
-biggestEvent (e1@(Event v1, _) : e2@(Event v2, _) : []) = if (v1 `dot` v1) < (v2 `dot` v2) then e2 else e1
-biggestEvent (e1@(Event v1, _) : e2@(Event v2, _) : es) = if (v1 `dot` v1) < (v2 `dot` v2) then biggestEvent (e2:es) else biggestEvent (e1:es)    
-    
+biggestEvent l = (Event vel, Event pos)
+    where 
+        (vel,pos) = maximumBy comparebyVelocity l
+        comparebyVelocity (vel1, _) (vel2, _) = compare (norm vel1) (norm vel2)
+
 -- neue Version testweise mit tupel output
 collision :: GameObject -> GameObject -> (Event Velocity, Event Position)
 collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || detectVertWall (pos o1) then detection o1 o2 (detectWall (pos o1)) (detectVertWall (pos o1)) else (NoEvent, NoEvent)    
@@ -73,8 +95,8 @@ collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || dete
 isColliding :: (Position,Position) -> Bool
 isColliding (posS,posA) = ((distance dpos) - (rs + ra)) <= sigma
     where
-        rs = 0.15 :: GLfloat
-        ra = 0.10 :: GLfloat
+        rs = sizePlayer
+        ra = sizeEnemy
         dpos = posS ^-^ posA
         sigma = 0    
     
@@ -93,17 +115,6 @@ detectVertWall (Vector x y)
 distance :: Vector -> GLfloat
 distance (Vector x y) = sqrt(x*x + y*y)
     
-{- 
-detection :: Velocity -> Velocity -> Position -> Position -> Bool -> Bool-> (Event Velocity, Event Position)
-detection v _ (Vector x y) _ True True
-    | x < (-1) && y < (-1) = (Event ((-2) *^ v), Event (Vector (0.001) (0.001)))
-    | x > 1 && y < (-1) = (Event ((-2) *^ v), Event (Vector (-0.001) (0.01)))
-    | x < (-1) && y > 1 = (Event ((-2) *^ v), Event (Vector (0.001) (-0.001)))
-    | x > 1 && y > 1 = (Event ((-2) *^ v), Event (Vector (-0.001) (-0.001)))
-detection (Vector _ vy) _ (Vector _ y) _ True False = if y < (-1) then (Event (Vector 0 ((-2)*vy)), Event (Vector 0 0.001)) else (Event (Vector 0 ((-2)*vy)), Event (Vector 0 (-0.001)))
-detection (Vector vx _) _ (Vector x _) _ False True = if x < (-1) then (Event (Vector ((-2)*vx) 0), Event (Vector 0.001 0)) else (Event (Vector ((-2)*vx) 0), Event (Vector (-0.001) 0))
-detection v1 v2 p1 p2 False False = afterColVel' v1 v2 p1 p2
--}
 
 detection :: GameObject -> GameObject -> Bool -> Bool-> (Event Velocity, Event Position)
 detection ob1 ob2 True True
@@ -120,10 +131,6 @@ detection ob1 ob2 False True = if px < (-1) then (Event (Vector ((-2)*vx) 0), Ev
           (Vector px _) = (pos ob1)
 detection ob1 ob2 False False = afterColVel ob1 ob2
 
--- nur zum Testen der gameSF -> nicht die richtige Kollisionsformel -> wieder löschen !!!
-afterColVel' :: Velocity -> Velocity -> Position -> Position -> (Event Velocity, Event Position)
-afterColVel' v1 v2 p1 p2 = (Event ((-2)*^v1), Event (p1 ^-^ (Vector 0.001 0.001)))
-
 afterColVel :: GameObject -> GameObject -> (Event Velocity, Event Position)
 afterColVel ob1 ob2 = 
         (Event ((
@@ -135,7 +142,7 @@ afterColVel ob1 ob2 =
          --v2p = (((vel ob2) `dot` dist) / (dist `dot` dist)) *^ dist
          v1s = (vel ob1) ^-^ v1p
          v2s = (vel ob2) ^-^ v2p
-         overlap = dist ^-^  (0.15*(size ob1) + 0.1*(size ob2)) *^ normedDist
+         overlap = dist ^-^  ((size ob1) + (size ob2)) *^ normedDist
          dist = (pos ob1) ^-^ (pos ob2) 
          normedDist = normalize dist
 --TODO    Überall normalize, größe * 0.15     

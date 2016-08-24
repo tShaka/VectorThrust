@@ -7,6 +7,9 @@ module Model
 , Acceleration(..)
 , Position(..)
 , Action(..)
+, ActionAcceleration(..)
+, ActionTurn(..)
+, actionNone
 , GameObject(..)
 , GameObjectType(..)
 , GameState(..)
@@ -17,6 +20,8 @@ module Model
 , ObjectSize(..)
 , Health(..)
 , Damage(..)
+, sizePlayer
+, sizeEnemy
 ) where
 
 import Graphics.UI.GLUT hiding (Position, Level, Size)
@@ -58,12 +63,20 @@ data GameObject = GameObject {
     dmg :: Damage,
     objectType :: GameObjectType
 } deriving (Show, Eq)
-
+        
 
 data GameObjectType = Player | Enemy | Asteroid | Projectile
     deriving (Eq, Show)
 -- alternatively instead of defining GameObjectType?
 -- data GameObject = Player GameObjectMass | Enemy GameObjectMass
+
+-- Radius der Spielergrafik
+sizePlayer :: GLfloat
+sizePlayer = 0.15
+
+-- Radius der Gegnergrafik
+sizeEnemy :: GLfloat
+sizeEnemy = 0.10
 
 -- GameState == Level in this case
 type GameState = [GameObject]
@@ -78,4 +91,17 @@ type Damage = GLfloat
 --New input, couldn't test @univ:
 --type IsProjectile = Bool
 
-data Action = AccLeft | AccRight | AccUp | AccDown | AccNone
+data Action = Action {
+    actionAcceleration :: ActionAcceleration, 
+    actionTurn :: ActionTurn
+    }
+    deriving (Eq, Show)
+    
+actionNone :: Action
+actionNone = Action AccNone TurnNone
+
+data ActionAcceleration = AccUp | AccDown | AccNone
+    deriving (Eq, Show)
+
+data ActionTurn = TurnLeft | TurnRight | TurnNone
+    deriving (Eq, Show)
