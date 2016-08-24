@@ -126,14 +126,11 @@ afterColVel' v1 v2 p1 p2 = (Event ((-2)*^v1), Event (p1 ^-^ (Vector 0.001 0.001)
 
 afterColVel :: GameObject -> GameObject -> (Event Velocity, Event Position)
 afterColVel ob1 ob2 = 
-        (Event (((((mas ob2) / (mas ob1)) * (1)) *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((1) *^ overlap))
+        (Event ((( ((mas ob2) / (mas ob1)) * (ela ob1) ) *^ v2s) ^+^ v1p ^-^ (vel ob1)), Event ((1) *^ overlap))
         where 
-         --elas1' = elas1 * (1 - 0) * 0.1
-         --elas1 = 1
-         --mass1 = 1
-         --mass2 = 1
          v1p = (vel ob1 `dot` normedDist) *^ normedDist
-         v2p = (((vel ob2) `dot` dist) / (dist `dot` dist)) *^ dist
+         v2p = (vel ob2 `dot` normedDist) *^ normedDist
+         --v2p = (((vel ob2) `dot` dist) / (dist `dot` dist)) *^ dist
          v1s = (vel ob1) ^-^ v1p
          v2s = (vel ob2) ^-^ v2p
          overlap = dist ^-^  (0.15*(size ob1) + 0.1*(size ob2)) *^ normedDist
