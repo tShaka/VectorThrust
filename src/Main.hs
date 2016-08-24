@@ -94,14 +94,6 @@ resizeWindow size = do
 
 -- callback for handling keyboardMouse and mouse input
 keyboardMouse :: IORef Action -> KeyboardMouseCallback
-{-
-keyboardMouse inputRef (SpecialKey KeyLeft) Down _ _ = inputRef $= AccLeft
-keyboardMouse inputRef (SpecialKey KeyRight) Down _ _ = inputRef $= AccRight
-keyboardMouse inputRef (SpecialKey KeyUp) Down _ _ = inputRef $= AccUp
-keyboardMouse inputRef (SpecialKey KeyDown) Down _ _ = inputRef $= AccDown
-keyboardMouse inputRef _ Up _ _ = inputRef $= AccNone
-keyboardMouse _ _ _ _ _ = return () -}
-
 keyboardMouse inputRef (SpecialKey key) upDown _ _ = do 
     actionState <- readIORef inputRef 
     inputRef $= case (upDown , key) of

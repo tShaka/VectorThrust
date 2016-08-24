@@ -20,6 +20,8 @@ module Model
 , ObjectSize(..)
 , Health(..)
 , Damage(..)
+, sizePlayer
+, sizeEnemy
 ) where
 
 import Graphics.UI.GLUT hiding (Position, Level, Size)

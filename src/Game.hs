@@ -12,10 +12,10 @@ initGameState :: GameState
 initGameState = [createPlayer, createEnemy (Vector 0.5 0.4), createEnemy (Vector 0.9 0.4)]
 
 createPlayer :: GameObject
-createPlayer = GameObject zeroVector zeroVector zeroVector 0 0 1 1 1 10000 0 Player
+createPlayer = GameObject zeroVector zeroVector zeroVector 0 0 1 1 sizePlayer 10000 0 Player
     
 createEnemy :: Position -> GameObject
-createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 0.8 10000 0 Enemy
+createEnemy pos = GameObject pos zeroVector zeroVector 0 0 0.9 1 sizeEnemy 10000 0 Enemy
 
 
 -- Hauptschleife für Bewegung aller GameObjects im GameState - berechnet Kollision und anschließend neue Position für alle GameObjects abhängig von Bewegung und Kollisionserkennung jedes GameObjects
@@ -89,8 +89,8 @@ collision o1 o2 = if isColliding (pos o1, pos o2) || detectWall (pos o1) || dete
 isColliding :: (Position,Position) -> Bool
 isColliding (posS,posA) = ((distance dpos) - (rs + ra)) <= sigma
     where
-        rs = 0.15 :: GLfloat
-        ra = 0.10 :: GLfloat
+        rs = sizePlayer
+        ra = sizeEnemy
         dpos = posS ^-^ posA
         sigma = 0    
     

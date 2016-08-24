@@ -27,7 +27,7 @@ renderPlayer pos rotation = do
     renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (0::GLfloat) (0::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo playerCircleSet pos))
     renderPrimitive TriangleFan $ (color $ Color3 (0::GLfloat) (1::GLfloat) (1::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo playerTriangleSet posTriangle))
         where
-            posTriangle = pos ^+^ 0.15 *^ Vector (cos rotation) (sin rotation) ^+^ Vector (-0.15) 0.12
+            posTriangle = pos ^+^ sizePlayer *^ Vector (cos rotation) (sin rotation) ^+^ Vector ((-1) * sizePlayer) 0.12
     
 -- render function to draw Enemey object    
 renderEnemy :: Position -> IO ()
@@ -36,14 +36,14 @@ renderEnemy pos = do
 
 -- Sprite representing the Players graphic -> Player is represented by a circle
 playerCircleSet :: Sprite
-playerCircleSet = let r=0.15 in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
+playerCircleSet = let r=sizePlayer in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
 
 playerTriangleSet :: Sprite
 playerTriangleSet = [Vector 0 0, Vector (-0.13) (-0.18), Vector 0.13 (-0.18)]
 
 -- Sprite representing the Enemies graphic -> Enemy is represented by a circle
 enemyCircleSet :: Sprite
-enemyCircleSet = let r=0.1 in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
+enemyCircleSet = let r=sizeEnemy in map (\t -> Vector (r*cos(t)) (r*sin(t))) [0,0.2..(2*pi)]
 
 -- function for translating a Sprite to a Position
 translateTo :: Sprite -> Position -> Sprite
