@@ -6,4 +6,8 @@ main :: IO ()
 main = testMainGameSF
 
 testMainGameSF :: IO ()
-testMainGameSF = print $ embed (mainGameSF initGameState) $ deltaEncode 1 $ take 1000 $ repeat zeroVector
+testMainGameSF = mapM_ (print . map objectPosVel) $ embed (mainGameSF initGameState) $ deltaEncode 0.01 $ take 1000 $ repeat zeroVector
+
+objectPosVel :: GameObject -> String
+objectPosVel ob1 = " | " ++ show (objectType ob1)++ ", Attributes: " ++show (pos ob1)++" "++show (vel ob1)++" rota: "++show (rot ob1) ++ "|"
+                    
