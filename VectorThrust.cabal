@@ -25,7 +25,7 @@ executable VectorThrust
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9, Yampa, time, GLUT
+  build-depends:       base >=4.8, Yampa, time, GLUT
   hs-source-dirs:      src
   default-language:    Haskell2010
   
@@ -33,6 +33,6 @@ executable Test
   main-is:             Test.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9, Yampa, time, GLUT
+  build-depends:       base >=4.8, Yampa, time, GLUT
   hs-source-dirs:      src
   default-language:    Haskell2010

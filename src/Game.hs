@@ -112,14 +112,14 @@ isColliding (posS,posA) = ((distance dpos) - (rs + ra)) <= sigma
     
 detectWall :: Position -> Bool
 detectWall (Vector x y)
-    | y < (-1) = True
-    | y > 1 = True
+    | y < (-1.01) = True
+    | y > 1.01 = True
     | otherwise = False
 
 detectVertWall :: Position -> Bool
 detectVertWall (Vector x y)
-    | x < (-1) = True
-    | x > 1 = True
+    | x < (-1.01) = True
+    | x > 1.01 = True
     | otherwise = False    
 
 distance :: Vector -> GLfloat
@@ -127,6 +127,7 @@ distance (Vector x y) = sqrt(x*x + y*y)
     
 
 detection :: GameObject -> GameObject -> Bool -> Bool-> (Event Velocity, Event Position)
+{-
 detection ob1 ob2 True True
     | x < (-1) && y < (-1) = (Event ((-2) *^ (vel ob1)), Event (Vector (0.001) (0.001)))
     | x > 1 && y < (-1) = (Event ((-2) *^ (vel ob1)), Event (Vector (-0.001) (0.01)))
@@ -137,6 +138,14 @@ detection ob1 ob2 True False = if py < (-1) then (Event (Vector 0 ((-2)*vy)), Ev
     where (Vector _ vy) = (vel ob1)
           (Vector _ py) = (pos ob1)
 detection ob1 ob2 False True = if px < (-1) then (Event (Vector ((-2)*vx) 0), Event (Vector 0.001 0)) else (Event (Vector ((-2)*vx) 0), Event (Vector (-0.001) 0))
+    where (Vector vx _) = (vel ob1)
+          (Vector px _) = (pos ob1)
+-}
+detection ob1 ob2 True True = (Event (Vector 0 0), Event ((-1.99) *^ (pos ob1)))
+    where (Vector x y) = (vel ob1)
+detection ob1 ob2 True False = (Event (Vector 0 0), Event (Vector 0 ((-1.99)*py)))
+    where (Vector _ py) = (pos ob1)
+detection ob1 ob2 False True = (Event (Vector 0 0), Event (Vector ((-1.99)*px) 0))
     where (Vector vx _) = (vel ob1)
           (Vector px _) = (pos ob1)
 detection ob1 ob2 False False = afterColVel ob1 ob2
