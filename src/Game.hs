@@ -5,6 +5,7 @@ module Game where
 import FRP.Yampa
 import Model
 import Graphics.UI.GLUT hiding (position, Position)
+import Data.Fixed
 
 
 -- creates initial GameState
@@ -32,26 +33,34 @@ gameSF' :: GameState -> SF (Action, [(Event Velocity, Event Position)]) GameStat
 gameSF' [] = proc (_,[]) -> returnA -< []
 gameSF' (iObject : iObjects) = proc (actS, (deltaVel, deltaPos):events) -> do
     -- Player has acceleration depending on input - Enemies acceleration is constant
-    let acc = if (objectType iObject) == Player then convAction actS else Vector (-0.1) (-0.1)    
-    vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (acc, deltaVel)
+    let
+        rotation = if (objectType iObject) == Player then mod' ((convertActionToRotation actS) + (rot iObject)) 360 else 0
+        accS = if (objectType iObject) == Player then convertActionToAcceleration actS rotation else Vector (-0.1) (-0.1)
+    vS <- ((vel iObject) ^+^) ^<< impulseIntegral -< (accS, deltaVel)
     pS <- ((pos iObject) ^+^) ^<< impulseIntegral -< (vS, deltaPos)
     -- rekursiver aufruf
-    gameStates <- gameSF' iObjects -< (actS, events) -- Rekursion!    
-    returnA -< (GameObject pS vS acc (rot iObject) (spn iObject) (mas iObject) (ela iObject) (size iObject) (hp iObject) (dmg iObject) (objectType iObject)) : gameStates
-
+    gameStates <- gameSF' iObjects -< (actS, events) -- Rekursion!
+    returnA -< (GameObject pS vS accS rotation (spn iObject) (mas iObject) (ela iObject) (size iObject)(hp iObject) (dmg iObject) (objectType iObject)) : gameStates
+    
 -- helper for converting input to acceleration
-convAction :: Action -> Acceleration
-convAction action = convAcc (actionAcceleration action) ^+^ convTurn (actionTurn action)
+convertActionToAcceleration :: Action -> Rotation -> Acceleration
+convertActionToAcceleration action rotation = convAcc (actionAcceleration action) rotation
 
-convAcc :: ActionAcceleration -> Acceleration
-convAcc AccUp = Vector 0 1
-convAcc AccDown = Vector 0 (-1)
-convAcc AccNone = Vector 0 0
+convertActionToRotation :: Action -> Rotation
+convertActionToRotation action = convTurn (actionTurn action)
 
-convTurn :: ActionTurn -> Acceleration
-convTurn TurnLeft = Vector (-1) 0
-convTurn TurnRight = Vector 1 0
-convTurn TurnNone = Vector 0 0    
+convAcc :: ActionAcceleration -> Rotation -> Acceleration
+convAcc AccUp rotation = rotateAcc rotation
+convAcc AccDown rotation = (-1) *^ rotateAcc rotation
+convAcc AccNone rotation = Vector 0 0
+
+rotateAcc:: Rotation -> Acceleration
+rotateAcc rotation = Vector ((-1) * sin (rotation)) (cos rotation)
+
+convTurn :: ActionTurn -> Rotation
+convTurn TurnLeft = 1
+convTurn TurnRight = (-1)
+convTurn TurnNone = 0   
     
 -- Kollisionserkennung für alle Objekte im GameState - die Reihenfolge der Ausgabe entspricht der Eingabe
 collisionDetection :: GameState -> [(Event Velocity, Event Position)]

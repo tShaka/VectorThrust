@@ -3,6 +3,7 @@ module VTGraphics where
 import Model
 import Graphics.UI.GLUT hiding (position, Position)
 import FRP.Yampa
+import Control.Monad
 
 -- Sprite represent the graphic of an object, which is given by a set of Positions of Points
 type Sprite = [Position]
@@ -25,9 +26,18 @@ renderGameObject (GameObject pos _ _ rotation _ _ _ _ _ _ Enemy) = renderEnemy p
 renderPlayer :: Position -> Rotation -> IO ()
 renderPlayer pos rotation = do
     renderPrimitive TriangleFan $ (color $ Color3 (1::GLfloat) (0::GLfloat) (0::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo playerCircleSet pos))
-    renderPrimitive TriangleFan $ (color $ Color3 (0::GLfloat) (1::GLfloat) (1::GLfloat)) >> (mapM_ (\pos@(Vector x y) -> vertex $ Vertex2 x y) (translateTo playerTriangleSet posTriangle))
-        where
-            posTriangle = pos ^+^ sizePlayer *^ Vector (cos rotation) (sin rotation) ^+^ Vector ((-1) * sizePlayer) 0.12
+    renderPlayerShip pos rotation
+
+renderPlayerShip :: Position -> Rotation -> IO ()
+renderPlayerShip (Vector pX pY) rotation = do
+    forM_ playerTriangleSet $ \x ->
+        preservingMatrix $ do
+            color $ Color3 (0::GLfloat) (1::GLfloat) (1::GLfloat)
+            translate $ Vector3 pX pY 0
+            rotate rotation $ Vector3 0 0 1
+            
+--rotate :: Sprite -> Rotation -> Sprite
+--rotate sprite rotation = map (\p -> p ^+^ Vector (sizePlayer * cos rotation) (sizePlayer * sin rotation)) sprite
     
 -- render function to draw Enemey object    
 renderEnemy :: Position -> IO ()
